@@ -11,11 +11,15 @@ type Kademlia struct {
 /*
 * Initializes the bootstrap procedure
  */
+
 func (kademlia *Kademlia) Run(connectIP string, myIP string) {
 	bootStrapIPtemp := connectIP
 	myIPtemp := myIP
 
 	kademlia.JoinNetwork(bootStrapIPtemp, myIPtemp) //attempts joining the Kademlia network
+	for {
+		fmt.Println(<-kademlia.network.testChannel)
+	}
 }
 
 func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
@@ -26,7 +30,7 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 	myNode := NewNode(myID, myIP)
 	routingTable := NewRoutingTable(myNode)
 
-	kademlia.network = Network{&routingTable.me, make(chan Message)}
+	kademlia.network = Network{&routingTable.me, make(chan Message), make(chan string)}
 
 	go kademlia.network.Listen(myIP)
 
@@ -52,6 +56,7 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 
 func (kademlia *Kademlia) channelReader() {
 	for {
+		kademlia.network.testChannel <- "chan read"
 		<-kademlia.network.msgChannel
 	}
 }

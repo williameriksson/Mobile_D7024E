@@ -7,8 +7,9 @@ import (
 )
 
 type Network struct {
-	me         *Node
-	msgChannel chan Message
+	me          *Node
+	msgChannel  chan Message
+	testChannel chan string
 }
 
 type Message struct {
@@ -23,11 +24,11 @@ func checkError(err error) {
 }
 
 func (network *Network) Listen(myIP string) {
-	fmt.Println(myIP)
+	// fmt.Println(myIP)
 	serverAddr, err := net.ResolveUDPAddr("udp", myIP)
 	conn, err := net.ListenUDP("udp", serverAddr)
 	checkError(err)
-	fmt.Println(conn)
+	// fmt.Println(conn)
 	go network.handleConnection(conn)
 	// go network.test()
 	for {
@@ -51,6 +52,7 @@ func (network *Network) handleConnection(conn *net.UDPConn) {
 			fmt.Println("GOT PING_ACK")
 			network.PingAck(&msg)
 		case "PING":
+			network.testChannel <- network.me.Address
 			fmt.Println("GOT PING")
 		case "STORE":
 			fmt.Println("GOT STORE")
@@ -65,10 +67,10 @@ func (network *Network) handleConnection(conn *net.UDPConn) {
 }
 
 func (network *Network) sendMessage(receiverNode *Node, msg *Message) {
-	ServerAddr, err := net.ResolveUDPAddr("udp", network.me.Address) // take from routingtable.me.address
+	ServerAddr, err := net.ResolveUDPAddr("udp", receiverNode.Address) // take from routingtable.me.address
 	checkError(err)
 
-	LocalAddr, err := net.ResolveUDPAddr("udp", receiverNode.Address)
+	LocalAddr, err := net.ResolveUDPAddr("udp", network.me.Address)
 	checkError(err)
 
 	Conn, err := net.DialUDP("udp", LocalAddr, ServerAddr)
