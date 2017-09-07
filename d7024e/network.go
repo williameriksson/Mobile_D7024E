@@ -7,10 +7,13 @@ import (
 )
 
 type Network struct {
+	me *Node
+	msgChannel chan Message
 }
 
 type Message struct {
 	Command string
+	SenderNode *Node
 }
 
 func checkError(err error) {
@@ -29,7 +32,6 @@ func (network *Network) Listen() {
 	for {
 
 	}
-
 }
 
 func (network *Network) handleConnection(conn *net.UDPConn) {
@@ -44,43 +46,54 @@ func (network *Network) handleConnection(conn *net.UDPConn) {
 		checkError(err)
 
 		switch msg.Command {
+		case "PING_ACK":
+			fmt.Println("GOT PING_ACK")
+			network.PingAck(&msg)
 		case "PING":
 			fmt.Println("GOT PING")
+		case "STORE":
+			fmt.Println("GOT STORE")
+		case "FIND_NODE":
+			fmt.Println("GOT FIND_NODE")
+		case "FIND_VALUE":
+			fmt.Println("FIND_VALUE")
 		default:
 			fmt.Println("GOT DEFAULT", n, addr, msg)
 		}
 	}
-
 }
 
-func (network *Network) test() {
-    ServerAddr,err := net.ResolveUDPAddr("udp",":8002")
-    checkError(err)
+func (network *Network) sendMessage(receiverNode *Node, msg *Message) {
+	ServerAddr,err := net.ResolveUDPAddr("udp", network.me.Address) // take from routingtable.me.address
+	checkError(err)
 
-    LocalAddr, err := net.ResolveUDPAddr("udp", ":8003")
-    checkError(err)
+	LocalAddr, err := net.ResolveUDPAddr("udp", *receiverNode.Address)
+	checkError(err)
 
-    Conn, err := net.DialUDP("udp", LocalAddr, ServerAddr)
-    checkError(err)
+	Conn, err := net.DialUDP("udp", LocalAddr, ServerAddr)
+	checkError(err)
 
-    defer Conn.Close()
+	defer Conn.Close()
 
-		msg := Message{"PING"}
-		marshMsg, err := json.Marshal(msg)
-		checkError(err)
-		Conn.Write(marshMsg)
+	marshMsg, err := json.Marshal(msg)
+	checkError(err)
+	Conn.Write(marshMsg)
+}
 
+
+func (network *Network) SendPingMessage(receiverNode *Node) {
+	go network.sendMessage(receiverNode, &Message{Command:"PING", SenderNode:network.me})
+}
+
+func (network *Network) PingAck(msg *Message) {
+	network.msgChannel <- *msg
+}
+
+func (network *Network) SendFindNodeMessage(receiverNode *Node) {
+	go network.sendMessage(receiverNode, &Message{Command:"FIND_NODE", SenderNode:network.me})
 }
 
 /*
-func (network *Network) SendPingMessage(node *Node) {
-	// TODO
-}
-
-func (network *Network) SendFindNodeMessage(node *Node) {
-	// TODO
-}
-
 func (network *Network) SendFindDataMessage(hash string) {
 	// TODO
 }
