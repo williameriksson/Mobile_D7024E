@@ -1,18 +1,18 @@
 package d7024e
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
-	"encoding/json"
 )
 
 type Network struct {
-	me *Node
+	me         *Node
 	msgChannel chan Message
 }
 
 type Message struct {
-	Command string
+	Command    string
 	SenderNode *Node
 }
 
@@ -22,13 +22,14 @@ func checkError(err error) {
 	}
 }
 
-func (network *Network) Listen() {
-	serverAddr, err := net.ResolveUDPAddr("udp",":8002")
+func (network *Network) Listen(myIP string) {
+	fmt.Println(myIP)
+	serverAddr, err := net.ResolveUDPAddr("udp", myIP)
 	conn, err := net.ListenUDP("udp", serverAddr)
 	checkError(err)
-
+	fmt.Println(conn)
 	go network.handleConnection(conn)
-	go network.test()
+	// go network.test()
 	for {
 
 	}
@@ -64,10 +65,10 @@ func (network *Network) handleConnection(conn *net.UDPConn) {
 }
 
 func (network *Network) sendMessage(receiverNode *Node, msg *Message) {
-	ServerAddr,err := net.ResolveUDPAddr("udp", network.me.Address) // take from routingtable.me.address
+	ServerAddr, err := net.ResolveUDPAddr("udp", network.me.Address) // take from routingtable.me.address
 	checkError(err)
 
-	LocalAddr, err := net.ResolveUDPAddr("udp", *receiverNode.Address)
+	LocalAddr, err := net.ResolveUDPAddr("udp", receiverNode.Address)
 	checkError(err)
 
 	Conn, err := net.DialUDP("udp", LocalAddr, ServerAddr)
@@ -80,9 +81,8 @@ func (network *Network) sendMessage(receiverNode *Node, msg *Message) {
 	Conn.Write(marshMsg)
 }
 
-
 func (network *Network) SendPingMessage(receiverNode *Node) {
-	go network.sendMessage(receiverNode, &Message{Command:"PING", SenderNode:network.me})
+	go network.sendMessage(receiverNode, &Message{Command: "PING", SenderNode: network.me})
 }
 
 func (network *Network) PingAck(msg *Message) {
@@ -90,7 +90,7 @@ func (network *Network) PingAck(msg *Message) {
 }
 
 func (network *Network) SendFindNodeMessage(receiverNode *Node) {
-	go network.sendMessage(receiverNode, &Message{Command:"FIND_NODE", SenderNode:network.me})
+	go network.sendMessage(receiverNode, &Message{Command: "FIND_NODE", SenderNode: network.me})
 }
 
 /*
