@@ -5,7 +5,7 @@ import "fmt"
 const alpha int = 3
 
 type Kademlia struct {
-	network Network
+	Network Network
 }
 
 /*
@@ -18,7 +18,6 @@ func (kademlia *Kademlia) Run(connectIP string, myIP string) {
 
 	kademlia.JoinNetwork(bootStrapIPtemp, myIPtemp) //attempts joining the Kademlia network
 	for {
-		fmt.Println(<-kademlia.network.testChannel)
 	}
 }
 
@@ -30,17 +29,20 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 	myNode := NewNode(myID, myIP)
 	routingTable := NewRoutingTable(myNode)
 
-	kademlia.network = Network{&routingTable.me, make(chan Message), make(chan string)}
+	kademlia.Network = Network{&routingTable.me, make(chan Message), make(chan string), nil}
 
-	go kademlia.network.Listen(myIP)
+	conn := kademlia.Network.Listen(myIP)
+	kademlia.Network.Conn = conn
+	go kademlia.Network.HandleConnection()
 
 	if bootStrapIP != "" {
 		fmt.Println("GOT bootstrap ID")
 		bootStrapNode := NewNode(bootStrapID, bootStrapIP)
-		go kademlia.network.SendPingMessage(&bootStrapNode)
+		go kademlia.Network.SendPingMessage(&bootStrapNode)
 
 		//Wait for confirmation
-		confirmation := <-kademlia.network.msgChannel
+		confirmation := <-kademlia.Network.MsgChannel
+		fmt.Println(confirmation)
 
 		if confirmation.Command == "PING_ACK" {
 			//ping success, proceed with bootstrap procedure.
@@ -56,8 +58,8 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 
 func (kademlia *Kademlia) channelReader() {
 	for {
-		kademlia.network.testChannel <- "chan read"
-		<-kademlia.network.msgChannel
+		kademlia.Network.TestChannel <- "chan read"
+		<-kademlia.Network.MsgChannel
 	}
 }
 

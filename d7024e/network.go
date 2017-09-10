@@ -8,8 +8,9 @@ import (
 
 type Network struct {
 	me          *Node
-	msgChannel  chan Message
-	testChannel chan string
+	MsgChannel  chan Message
+	TestChannel chan string
+	Conn				*net.UDPConn
 }
 
 type Message struct {
@@ -23,26 +24,24 @@ func checkError(err error) {
 	}
 }
 
-func (network *Network) Listen(myIP string) {
+func (network *Network) Listen(myIP string) *net.UDPConn{
 	// fmt.Println(myIP)
 	serverAddr, err := net.ResolveUDPAddr("udp", myIP)
 	conn, err := net.ListenUDP("udp", serverAddr)
+	//network.Conn = conn
 	checkError(err)
-	// fmt.Println(conn)
-	go network.handleConnection(conn)
+	return conn
+	//go network.handleConnection(conn)
 	// go network.test()
-	for {
-
-	}
 }
 
-func (network *Network) handleConnection(conn *net.UDPConn) {
+func (network *Network) HandleConnection() {
 	buf := make([]byte, 1024)
 	var msg Message
 
-	defer conn.Close()
+	defer network.Conn.Close()
 	for {
-		n, addr, err := conn.ReadFromUDP(buf)
+		n, addr, err := network.Conn.ReadFromUDP(buf)
 		checkError(err)
 		err = json.Unmarshal(buf[0:n], &msg)
 		checkError(err)
@@ -50,9 +49,10 @@ func (network *Network) handleConnection(conn *net.UDPConn) {
 		switch msg.Command {
 		case "PING_ACK":
 			fmt.Println("GOT PING_ACK")
-			network.PingAck(&msg)
+			go network.PingAck(&msg)
 		case "PING":
-			network.testChannel <- network.me.Address
+			network.TestChannel <- network.me.Address
+			network.SendPingAck(msg.SenderNode)
 			fmt.Println("GOT PING")
 		case "STORE":
 			fmt.Println("GOT STORE")
@@ -61,34 +61,31 @@ func (network *Network) handleConnection(conn *net.UDPConn) {
 		case "FIND_VALUE":
 			fmt.Println("FIND_VALUE")
 		default:
-			fmt.Println("GOT DEFAULT", n, addr, msg)
+			fmt.Println("GOT DEFAULT", n, addr, &msg)
 		}
 	}
 }
 
 func (network *Network) sendMessage(receiverNode *Node, msg *Message) {
-	ServerAddr, err := net.ResolveUDPAddr("udp", receiverNode.Address) // take from routingtable.me.address
+	ServerAddr, err := net.ResolveUDPAddr("udp", receiverNode.Address)
 	checkError(err)
-
-	LocalAddr, err := net.ResolveUDPAddr("udp", network.me.Address)
-	checkError(err)
-
-	Conn, err := net.DialUDP("udp", LocalAddr, ServerAddr)
-	checkError(err)
-
-	defer Conn.Close()
 
 	marshMsg, err := json.Marshal(msg)
 	checkError(err)
-	Conn.Write(marshMsg)
+	network.Conn.WriteToUDP(marshMsg, ServerAddr)
 }
 
 func (network *Network) SendPingMessage(receiverNode *Node) {
 	go network.sendMessage(receiverNode, &Message{Command: "PING", SenderNode: network.me})
 }
 
+func (network *Network) SendPingAck(receiverNode *Node) {
+	go network.sendMessage(receiverNode, &Message{Command: "PING_ACK", SenderNode: network.me})
+}
+
 func (network *Network) PingAck(msg *Message) {
-	network.msgChannel <- *msg
+	network.TestChannel <- "Got PING_ACK"
+	network.MsgChannel <- *msg
 }
 
 func (network *Network) SendFindNodeMessage(receiverNode *Node) {
