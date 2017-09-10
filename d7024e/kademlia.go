@@ -6,6 +6,14 @@ const alpha int = 3
 
 type Kademlia struct {
 	network Network
+	files map[string][]byte  // Hash table mapping sha-1 hash (base64 encoded) to some data
+}
+
+// Constructor
+func NewKademlia() *Kademlia {
+	var kademlia Kademlia
+	kademlia.files = make(map[string][]byte)
+	return &kademlia
 }
 
 /*
@@ -68,8 +76,11 @@ func (kademlia *Kademlia) LookupNode(target *Node) {
 
 func (kademlia *Kademlia) LookupData(hash string) {
 	// TODO
+	fmt.Println(kademlia.files[hash])
 }
 
 func (kademlia *Kademlia) Store(data []byte) {
 	// TODO
+	hash := HashData(data)
+	kademlia.files[hash] = data
 }

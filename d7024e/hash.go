@@ -5,8 +5,16 @@ import (
 	"io"
 	"log"
 	"os"
+	"encoding/base64"
 )
 
+func HashData(data []byte) string {
+	h := sha1.New()
+	h.Write(data)
+	return base64.URLEncoding.EncodeToString(h.Sum(nil))
+}
+
+// Hashing a file, probably won't be used
 func Hash(file string) []byte {
 	f, err := os.Open(file)
 	if err != nil {
@@ -20,3 +28,12 @@ func Hash(file string) []byte {
 	}
 	return h.Sum(nil)
 }
+
+// Hashing a string, probably won't be used
+func HashStr(text string) []byte {
+	h := sha1.New()
+	io.WriteString(h, text)
+	return h.Sum(nil)
+}
+
+
