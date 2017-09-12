@@ -76,13 +76,23 @@ func (kademlia *Kademlia) LookupNode(target *Node) {
 	fmt.Println("LookupNode running")
 }
 
-func (kademlia *Kademlia) LookupData(hash string) {
-	// TODO
-	fmt.Println(kademlia.files[hash])
+func (kademlia *Kademlia) LookupValue(hash string) {
+	// If the node has the value, return it
+	if val, ok := kademlia.files[hash]; ok {
+		/*
+		 * DATA (val) SHOULD BE RETURNED HERE
+		 */
+		fmt.Printf("Yes, the value is %x \n", val)
+	} else {
+		/* 
+		 * TRIPLE (IP Adress, UDP Port, Node ID) SHOULD BE RETURNED HERE
+		 */
+		fmt.Println("No value")
+	}
+	
 }
 
 func (kademlia *Kademlia) Store(data []byte) {
-	// TODO
 	hash := HashData(data)
 	kademlia.files[hash] = data
 }
