@@ -80,10 +80,12 @@ func (kademlia *Kademlia) channelReader() {
 			kademlia.Network.SendPingAck(msg.SenderNode)
 		case "STORE":
 			fmt.Println("GOT STORE")
+			kademlia.Store(msg.Data)
 		case "FIND_NODE":
 			fmt.Println("GOT FIND_NODE")
 		case "FIND_VALUE":
 			fmt.Println("FIND_VALUE")
+			kademlia.LookupValue(msg.Hash)
 		default:
 			fmt.Println("GOT DEFAULT")
 		}

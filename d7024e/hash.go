@@ -5,13 +5,13 @@ import (
 	"io"
 	"log"
 	"os"
-	"encoding/base64"
+	"encoding/hex"
 )
 
 func HashData(data []byte) string {
 	h := sha1.New()
 	h.Write(data)
-	return base64.URLEncoding.EncodeToString(h.Sum(nil))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // Hashing a file, probably won't be used
