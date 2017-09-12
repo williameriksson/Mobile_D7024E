@@ -1,12 +1,15 @@
 package d7024e
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const alpha int = 3
 
 type Kademlia struct {
-	Network Network
-	files map[string][]byte  // Hash table mapping sha-1 hash (base64 encoded) to some data
+	Network      Network
+	files        map[string][]byte // Hash table mapping sha-1 hash (base64 encoded) to some data
+	RoutingTable *RoutingTable
 }
 
 // Constructor
@@ -35,9 +38,9 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 	bootStrapID := NewRandomKademliaID() //20 byte id temp ID
 
 	myNode := NewNode(myID, myIP)
-	routingTable := NewRoutingTable(myNode)
+	kademlia.RoutingTable = NewRoutingTable(myNode)
 
-	kademlia.Network = Network{&routingTable.me, make(chan Message), make(chan string), nil}
+	kademlia.Network = Network{&kademlia.RoutingTable.me, make(chan Message), make(chan string), nil}
 
 	conn := kademlia.Network.Listen(myIP)
 	kademlia.Network.Conn = conn
@@ -54,8 +57,8 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 
 		if confirmation.Command == "PING_ACK" {
 			//ping success, proceed with bootstrap procedure.
-			routingTable.AddNode(bootStrapNode)
-			kademlia.LookupNode(&routingTable.me)
+			kademlia.RoutingTable.AddNode(bootStrapNode)
+			kademlia.LookupNode(&kademlia.RoutingTable.me)
 		} else {
 			fmt.Println("Failed connect!")
 		}
@@ -67,13 +70,34 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 func (kademlia *Kademlia) channelReader() {
 	for {
 		kademlia.Network.TestChannel <- "chan read"
-		<-kademlia.Network.MsgChannel
+		msg := <-kademlia.Network.MsgChannel
+
+		switch msg.Command {
+		case "PING_ACK":
+			fmt.Println("GOT PING_ACK")
+		case "PING":
+			fmt.Println(kademlia.RoutingTable.me.ID.String() + "GOT PING")
+			kademlia.Network.SendPingAck(msg.SenderNode)
+		case "STORE":
+			fmt.Println("GOT STORE")
+		case "FIND_NODE":
+			fmt.Println("GOT FIND_NODE")
+		case "FIND_VALUE":
+			fmt.Println("FIND_VALUE")
+		default:
+			fmt.Println("GOT DEFAULT")
+		}
 	}
 }
 
 func (kademlia *Kademlia) LookupNode(target *Node) {
 	// TODO
 	fmt.Println("LookupNode running")
+	closestNodes := kademlia.RoutingTable.FindClosestNodes(target.ID, alpha)
+	for i := 0; i < alpha && i < len(closestNodes); i++ {
+		msg := Message{"FIND_NODE", kademlia.Network.me}
+		go kademlia.Network.sendMessage(&closestNodes[i], &msg)
+	}
 }
 
 func (kademlia *Kademlia) LookupValue(hash string) {
