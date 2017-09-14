@@ -7,17 +7,18 @@ import (
 )
 
 type Network struct {
-	me					*Node
-	MsgChannel	chan Message
-	TestChannel	chan string
-	Conn				*net.UDPConn
+	me          *Node
+	MsgChannel  chan Message
+	TestChannel chan string
+	Conn        *net.UDPConn
 }
 
 type Message struct {
-	Command			string
-	SenderNode	*Node
-	Hash				string
-	Data				[]byte
+	Command    string
+	SenderNode *Node
+	Hash       string
+	Data       []byte
+	NodeList   []Node
 }
 
 func checkError(err error) {
@@ -26,7 +27,7 @@ func checkError(err error) {
 	}
 }
 
-func (network *Network) Listen(myIP string) *net.UDPConn{
+func (network *Network) Listen(myIP string) *net.UDPConn {
 	serverAddr, err := net.ResolveUDPAddr("udp", myIP)
 	conn, err := net.ListenUDP("udp", serverAddr)
 	checkError(err)
@@ -64,14 +65,19 @@ func (network *Network) SendPingAck(receiverNode *Node) {
 	go network.sendMessage(receiverNode, &Message{Command: "PING_ACK", SenderNode: network.me})
 }
 
-func (network *Network) SendFindNodeMessage(receiverNode *Node) {
-	go network.sendMessage(receiverNode, &Message{Command: "FIND_NODE", SenderNode: network.me})
+func (network *Network) SendFindNodeMessage(receiverNode *Node, kiD *KademliaID) {
+	data := []byte(kiD.String())
+	go network.sendMessage(receiverNode, &Message{Command: "FIND_NODE", SenderNode: network.me, Data: data})
+}
+
+func (network *Network) SendReturnFindNodeMessage(receiverNode *Node, nodeList []Node) {
+	go network.sendMessage(receiverNode, &Message{Command: "RETURN_FIND_NODE", SenderNode: network.me, NodeList: nodeList})
 }
 
 func (network *Network) SendFindDataMessage(receiverNode *Node, hash string) {
-	go network.sendMessage(receiverNode, &Message{Command: "FIND_VALUE", SenderNode: network.me, Hash:hash})
+	go network.sendMessage(receiverNode, &Message{Command: "FIND_VALUE", SenderNode: network.me, Hash: hash})
 }
 
 func (network *Network) SendStoreMessage(receiverNode *Node, data []byte) {
-	go network.sendMessage(receiverNode, &Message{Command: "STORE", SenderNode: network.me, Data:data})
+	go network.sendMessage(receiverNode, &Message{Command: "STORE", SenderNode: network.me, Data: data})
 }
