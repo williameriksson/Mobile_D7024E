@@ -70,8 +70,8 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 				kademlia.RoutingTable.AddNode(NewNode(NewKademliaID(confirmation.SenderNode.ID.String()), bootStrapIP))
 				queriedNodes := make(map[string]bool)
 				nodeCandidates := NodeCandidates{}
-				kademlia.LookupNode(kademlia.RoutingTable.me.ID, queriedNodes, nodeCandidates, 0)
-				kademlia.Network.SendFindNodeMessage(&bootStrapNode, kademlia.RoutingTable.me.ID) // QUESTION: Why was this commented out?
+				kademlia.LookupNode(&kademlia.RoutingTable.me.ID, queriedNodes, nodeCandidates, 0)
+				// kademlia.Network.SendFindNodeMessage(&bootStrapNode, kademlia.RoutingTable.me.ID) // QUESTION: Why was this commented out?
 				break
 				} else {
 					fmt.Println("Expected PING_ACK, instead got: ", confirmation.Command, "will keep waiting for PING_ACK")
@@ -98,15 +98,14 @@ func (kademlia *Kademlia) channelReader() {
 	for {
 		//halts here waiting for a command.
 		msg := <-kademlia.Network.MsgChannel
-		kademlia.WriteToFile(kademlia.RoutingTable.me.ID.String(), []byte(kademlia.RoutingTable.GetRoutingTable()))
-		kademlia.RoutingTable.AddNode(*msg.SenderNode) // QUESTION: Added this line, should this be here?
+		kademlia.RoutingTable.AddNode(msg.SenderNode) // QUESTION: Added this line, should this be here?
 		switch msg.Command {
 		case cmd_ping_ack:
 			kademlia.Network.TestChannel <- kademlia.RoutingTable.me.Address + (" GOT PING_ACK")
 
 		case cmd_ping:
 			kademlia.Network.TestChannel <- kademlia.RoutingTable.me.Address + (" GOT PING")
-			kademlia.Network.SendPingAck(msg.SenderNode)
+			kademlia.Network.SendPingAck(&msg.SenderNode)
 
 		case cmd_store:
 			fmt.Println("GOT " + cmd_store)
@@ -116,7 +115,7 @@ func (kademlia *Kademlia) channelReader() {
 			//THIS node has recived a request to find a certain node (from some other node)
 			// kademlia.Network.TestChannel <- kademlia.RoutingTable.me.Address + (" GOT FIND_NODE")
 			kID := NewKademliaID(string(msg.Data))
-			kademlia.findNode(msg.SenderNode, kID)
+			kademlia.findNode(&msg.SenderNode, kID)
 
 		case cmd_find_node_returned:
 			//Some node has returned a list of the k closest nodes to the node that THIS node requested
@@ -124,7 +123,7 @@ func (kademlia *Kademlia) channelReader() {
 			var nodeList []Node
 			err := json.Unmarshal(msg.Data, &nodeList)
 			checkError(err)
-			kademlia.findNodeReturn(msg.SenderNode, nodeList)
+			kademlia.findNodeReturn(&msg.SenderNode, nodeList)
 
 		case cmd_find_value:
 			fmt.Println("FIND_VALUE")
@@ -133,6 +132,7 @@ func (kademlia *Kademlia) channelReader() {
 		default:
 			fmt.Println("GOT DEFAULT")
 		}
+		kademlia.WriteToFile(kademlia.RoutingTable.me.ID.String(), []byte(kademlia.RoutingTable.GetRoutingTable()))
 	}
 }
 

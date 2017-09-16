@@ -6,13 +6,13 @@ import (
 )
 
 type Node struct {
-	ID       *KademliaID
+	ID       KademliaID
 	Address  string
 	distance *KademliaID
 }
 
 func NewNode(id *KademliaID, address string) Node {
-	return Node{id, address, nil}
+	return Node{*id, address, nil}
 }
 
 func (node *Node) CalcDistance(target *KademliaID) {

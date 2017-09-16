@@ -15,7 +15,7 @@ type Network struct {
 
 type Message struct {
 	Command    string
-	SenderNode *Node
+	SenderNode Node
 	Hash       string
 	Data       []byte
 }
@@ -57,28 +57,28 @@ func (network *Network) sendMessage(receiverNode *Node, msg *Message) {
 }
 
 func (network *Network) SendPingMessage(receiverNode *Node) {
-	go network.sendMessage(receiverNode, &Message{Command: cmd_ping, SenderNode: network.me})
+	go network.sendMessage(receiverNode, &Message{Command: cmd_ping, SenderNode: *network.me})
 }
 
 func (network *Network) SendPingAck(receiverNode *Node) {
-	go network.sendMessage(receiverNode, &Message{Command: cmd_ping_ack, SenderNode: network.me})
+	go network.sendMessage(receiverNode, &Message{Command: cmd_ping_ack, SenderNode: *network.me})
 }
 
 func (network *Network) SendFindNodeMessage(receiverNode *Node, kiD *KademliaID) {
 	data := []byte(kiD.String())
-	go network.sendMessage(receiverNode, &Message{Command: cmd_find_node, SenderNode: network.me, Data: data})
+	go network.sendMessage(receiverNode, &Message{Command: cmd_find_node, SenderNode: *network.me, Data: data})
 }
 
 func (network *Network) SendReturnFindNodeMessage(receiverNode *Node, nodeList []Node) {
 	data, err := json.Marshal(nodeList)
 	checkError(err)
-	go network.sendMessage(receiverNode, &Message{Command: cmd_find_node_returned, SenderNode: network.me, Data: data})
+	go network.sendMessage(receiverNode, &Message{Command: cmd_find_node_returned, SenderNode: *network.me, Data: data})
 }
 
 func (network *Network) SendFindDataMessage(receiverNode *Node, hash string) {
-	go network.sendMessage(receiverNode, &Message{Command: cmd_find_value, SenderNode: network.me, Hash: hash})
+	go network.sendMessage(receiverNode, &Message{Command: cmd_find_value, SenderNode: *network.me, Hash: hash})
 }
 
 func (network *Network) SendStoreMessage(receiverNode *Node, data []byte) {
-	go network.sendMessage(receiverNode, &Message{Command: cmd_store, SenderNode: network.me, Data: data})
+	go network.sendMessage(receiverNode, &Message{Command: cmd_store, SenderNode: *network.me, Data: data})
 }

@@ -1,7 +1,7 @@
 package d7024e
+import "fmt"
 
 const bucketSize = 20
-
 type RoutingTable struct {
 	me      Node
 	buckets [IDLength * 8]*bucket
@@ -17,9 +17,11 @@ func NewRoutingTable(me Node) *RoutingTable {
 }
 
 func (routingTable *RoutingTable) AddNode(node Node) {
-	bucketIndex := routingTable.getBucketIndex(node.ID)
-	bucket := routingTable.buckets[bucketIndex]
-	bucket.AddNode(node)
+	if !node.ID.Equals(&routingTable.me.ID) {
+		bucketIndex := routingTable.getBucketIndex(&node.ID)
+		bucket := routingTable.buckets[bucketIndex]
+		bucket.AddNode(node)
+	}
 }
 
 func (routingTable *RoutingTable) FindClosestNodes(target *KademliaID, count int) []Node {
@@ -45,12 +47,12 @@ func (routingTable *RoutingTable) FindClosestNodes(target *KademliaID, count int
 	if count > candidates.Len() {
 		count = candidates.Len()
 	}
-
+	fmt.Println(candidates.GetNodes(count))
 	return candidates.GetNodes(count)
 }
 
 func (routingTable *RoutingTable) getBucketIndex(id *KademliaID) int {
-	distance := id.CalcDistance(routingTable.me.ID)
+	distance := id.CalcDistance(&routingTable.me.ID)
 	for i := 0; i < IDLength; i++ {
 		for j := 0; j < 8; j++ {
 			if (distance[i]>>uint8(7-j))&0x1 != 0 {

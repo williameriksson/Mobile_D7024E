@@ -2,6 +2,7 @@ package d7024e
 
 import (
 	"container/list"
+	"fmt"
 )
 
 type bucket struct {
@@ -19,14 +20,16 @@ func (bucket *bucket) AddNode(node Node) {
 	for e := bucket.list.Front(); e != nil; e = e.Next() {
 		nodeID := e.Value.(Node).ID
 
-		if (node).ID.Equals(nodeID) {
+		if (node).ID.Equals(&nodeID) {
 			element = e
+			break
 		}
 	}
 
 	if element == nil {
 		if bucket.list.Len() < bucketSize {
 			bucket.list.PushFront(node)
+			fmt.Println("PUSHING FRONT: ", node.ID.String())
 		}
 	} else {
 		bucket.list.MoveToFront(element)
