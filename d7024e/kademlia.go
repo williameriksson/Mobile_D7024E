@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+	"io/ioutil"
 )
 
 const alpha int = 3
@@ -40,6 +41,7 @@ func (kademlia *Kademlia) Run(connectIP string, myIP string) {
 func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 
 	myID := NewRandomKademliaID()        //temp ID
+	fmt.Println("ID: ", myID)
 	bootStrapID := NewRandomKademliaID() //20 byte id temp ID TODO: bootstrap should NOT be assigned a random ID.
 
 	myNode := NewNode(myID, myIP)
@@ -58,19 +60,23 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 		kademlia.Network.SendPingMessage(&bootStrapNode)
 
 		//Wait for confirmation
-		confirmation := <-kademlia.Network.MsgChannel
+		for {
+			confirmation := <-kademlia.Network.MsgChannel
 
-		if confirmation.Command == cmd_ping_ack {
-			kademlia.Network.TestChannel <- kademlia.RoutingTable.me.Address + (" GOT PING_ACK")
-			//ping success, proceed with bootstrap procedure.
-			kademlia.RoutingTable.AddNode(NewNode(NewKademliaID(confirmation.SenderNode.ID.String()), bootStrapIP))
-			queriedNodes := make(map[string]bool)
-			nodeCandidates := NodeCandidates{}
-			kademlia.LookupNode(kademlia.RoutingTable.me.ID, queriedNodes, nodeCandidates, 0)
-			// kademlia.Network.SendFindNodeMessage(&bootStrapNode, kademlia.RoutingTable.me.ID)
+			if confirmation.Command == cmd_ping_ack {
+				kademlia.Network.TestChannel <- kademlia.RoutingTable.me.Address + (" GOT PING_ACK")
+				//ping success, proceed with bootstrap procedure.
+				//kademlia.RoutingTable.AddNode(*confirmation.SenderNode) // QUESTION: Why does this line produce duplicates but the line below does not?
+				kademlia.RoutingTable.AddNode(NewNode(NewKademliaID(confirmation.SenderNode.ID.String()), bootStrapIP))
+				queriedNodes := make(map[string]bool)
+				nodeCandidates := NodeCandidates{}
+				kademlia.LookupNode(kademlia.RoutingTable.me.ID, queriedNodes, nodeCandidates, 0)
+				kademlia.Network.SendFindNodeMessage(&bootStrapNode, kademlia.RoutingTable.me.ID) // QUESTION: Why was this commented out?
+				break
+				} else {
+					fmt.Println("Expected PING_ACK, instead got: ", confirmation.Command, "will keep waiting for PING_ACK")
+				}
 
-		} else {
-			fmt.Println("Failed connect!")
 		}
 	}
 	kademlia.channelReader()
@@ -92,7 +98,8 @@ func (kademlia *Kademlia) channelReader() {
 	for {
 		//halts here waiting for a command.
 		msg := <-kademlia.Network.MsgChannel
-
+		kademlia.WriteToFile(kademlia.RoutingTable.me.ID.String(), []byte(kademlia.RoutingTable.GetRoutingTable()))
+		kademlia.RoutingTable.AddNode(*msg.SenderNode) // QUESTION: Added this line, should this be here?
 		switch msg.Command {
 		case cmd_ping_ack:
 			kademlia.Network.TestChannel <- kademlia.RoutingTable.me.Address + (" GOT PING_ACK")
@@ -236,4 +243,11 @@ func (kademlia *Kademlia) LookupValue(hash string) {
 func (kademlia *Kademlia) Store(data []byte) {
 	hash := HashData(data)
 	kademlia.files[hash] = data
+}
+
+func (kademlia *Kademlia) WriteToFile(path string, data []byte) {
+	err := ioutil.WriteFile(path, data, 0644)
+	if err != nil {
+		fmt.Println("WRITE ERROR: ", err)
+	}
 }

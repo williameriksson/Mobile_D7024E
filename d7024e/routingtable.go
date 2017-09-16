@@ -61,3 +61,17 @@ func (routingTable *RoutingTable) getBucketIndex(id *KademliaID) int {
 
 	return IDLength*8 - 1
 }
+
+
+// Returns a string with all nodeID entries of the routingtable,
+// for testing purposes
+func (routingTable *RoutingTable) GetRoutingTable() string {
+	tempString := ""
+	for i := 0; i < len(routingTable.buckets); i++ {
+		for e := routingTable.buckets[i].list.Front(); e != nil; e = e.Next() {
+			nodeID := e.Value.(Node).ID
+			tempString += nodeID.String() + "\n"
+		}
+	}
+	return tempString
+}
