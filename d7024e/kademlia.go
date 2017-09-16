@@ -224,6 +224,15 @@ func (kademlia *Kademlia) LookupNode(target *KademliaID, queriedNodes map[string
 	}
 }
 
+/*
+func (kademlia *Kademlia) LookupNode2(target *KademliaID) {
+	closestNodes []Node = kademlia.RoutingTable.FindClosestNodes(target, alpha)
+	for _, node := range closestNodes {
+		kademlia.Network.SendFindNodeMessage(node, target)
+	}
+
+}*/
+
 func (kademlia *Kademlia) LookupValue(hash string) {
 	// If the node has the value, return it
 	if val, ok := kademlia.files[hash]; ok {
@@ -235,7 +244,9 @@ func (kademlia *Kademlia) LookupValue(hash string) {
 		/*
 		 * TRIPLE (IP Adress, UDP Port, Node ID) SHOULD BE RETURNED HERE
 		 */
-		fmt.Println("No value")
+		id := NewKademliaID(hash)
+		//kademlia.LookupNode
+		fmt.Println("No value, %x", id)
 	}
 
 }
