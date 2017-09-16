@@ -34,7 +34,7 @@ func (network *Network) Listen(myIP string) *net.UDPConn {
 }
 
 func (network *Network) HandleConnection() {
-	buf := make([]byte, 1024)
+	buf := make([]byte, 2048)
 	var msg Message
 
 	defer network.Conn.Close()
