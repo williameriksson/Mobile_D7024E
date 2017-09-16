@@ -18,7 +18,6 @@ type Message struct {
 	SenderNode *Node
 	Hash       string
 	Data       []byte
-	NodeList   []Node
 }
 
 func checkError(err error) {
@@ -58,26 +57,28 @@ func (network *Network) sendMessage(receiverNode *Node, msg *Message) {
 }
 
 func (network *Network) SendPingMessage(receiverNode *Node) {
-	go network.sendMessage(receiverNode, &Message{Command: "PING", SenderNode: network.me})
+	go network.sendMessage(receiverNode, &Message{Command: cmd_ping, SenderNode: network.me})
 }
 
 func (network *Network) SendPingAck(receiverNode *Node) {
-	go network.sendMessage(receiverNode, &Message{Command: "PING_ACK", SenderNode: network.me})
+	go network.sendMessage(receiverNode, &Message{Command: cmd_ping_ack, SenderNode: network.me})
 }
 
 func (network *Network) SendFindNodeMessage(receiverNode *Node, kiD *KademliaID) {
 	data := []byte(kiD.String())
-	go network.sendMessage(receiverNode, &Message{Command: "FIND_NODE", SenderNode: network.me, Data: data})
+	go network.sendMessage(receiverNode, &Message{Command: cmd_find_node, SenderNode: network.me, Data: data})
 }
 
 func (network *Network) SendReturnFindNodeMessage(receiverNode *Node, nodeList []Node) {
-	go network.sendMessage(receiverNode, &Message{Command: "RETURN_FIND_NODE", SenderNode: network.me, NodeList: nodeList})
+	data, err := json.Marshal(nodeList)
+	checkError(err)
+	go network.sendMessage(receiverNode, &Message{Command: cmd_find_node_returned, SenderNode: network.me, Data: data})
 }
 
 func (network *Network) SendFindDataMessage(receiverNode *Node, hash string) {
-	go network.sendMessage(receiverNode, &Message{Command: "FIND_VALUE", SenderNode: network.me, Hash: hash})
+	go network.sendMessage(receiverNode, &Message{Command: cmd_find_value, SenderNode: network.me, Hash: hash})
 }
 
 func (network *Network) SendStoreMessage(receiverNode *Node, data []byte) {
-	go network.sendMessage(receiverNode, &Message{Command: "STORE", SenderNode: network.me, Data: data})
+	go network.sendMessage(receiverNode, &Message{Command: cmd_store, SenderNode: network.me, Data: data})
 }
