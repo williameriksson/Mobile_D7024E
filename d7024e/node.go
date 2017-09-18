@@ -54,3 +54,10 @@ func (candidates *NodeCandidates) Swap(i, j int) {
 func (candidates *NodeCandidates) Less(i, j int) bool {
 	return candidates.nodes[i].Less(&candidates.nodes[j])
 }
+
+func (candidates *NodeCandidates) Print() {
+	for _, node := range candidates.nodes {
+		fmt.Printf("ID: 0x%X, IP: %v, Distance: 0x%X \n", node.ID, node.Address, *node.distance)
+	}
+	
+}

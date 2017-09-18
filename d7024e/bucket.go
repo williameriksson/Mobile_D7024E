@@ -29,7 +29,7 @@ func (bucket *bucket) AddNode(node Node) {
 	if element == nil {
 		if bucket.list.Len() < bucketSize {
 			bucket.list.PushFront(node)
-			fmt.Println("PUSHING FRONT: ", node.ID.String())
+			fmt.Printf("PUSHING FRONT: 0x%X\n", node.ID)
 		}
 	} else {
 		bucket.list.MoveToFront(element)

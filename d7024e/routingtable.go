@@ -1,5 +1,5 @@
 package d7024e
-import "fmt"
+//import "fmt"
 
 const bucketSize = 20
 type RoutingTable struct {
@@ -47,7 +47,8 @@ func (routingTable *RoutingTable) FindClosestNodes(target *KademliaID, count int
 	if count > candidates.Len() {
 		count = candidates.Len()
 	}
-	fmt.Println(candidates.GetNodes(count))
+	//fmt.Println(candidates.GetNodes(count))
+	candidates.Print()
 	return candidates.GetNodes(count)
 }
 

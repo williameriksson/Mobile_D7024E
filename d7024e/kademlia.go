@@ -41,7 +41,7 @@ func (kademlia *Kademlia) Run(connectIP string, myIP string) {
 func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 
 	myID := NewRandomKademliaID()        //temp ID
-	fmt.Println("ID: ", myID)
+	fmt.Printf("ID: 0x%X\n", myID)
 	bootStrapID := NewRandomKademliaID() //20 byte id temp ID TODO: bootstrap should NOT be assigned a random ID.
 
 	myNode := NewNode(myID, myIP)
@@ -141,7 +141,7 @@ func (kademlia *Kademlia) findNode(senderNode *Node, kID *KademliaID) {
 	nodeList := kademlia.RoutingTable.FindClosestNodes(kID, k)
 	fmt.Println("nodelist --")
 	for i := 0; i < len(nodeList); i++ {
-		fmt.Println("node : " + nodeList[i].ID.String())
+		fmt.Printf("node : 0x%X\n", nodeList[i].ID)
 	}
 	kademlia.Network.SendReturnFindNodeMessage(senderNode, nodeList)
 
