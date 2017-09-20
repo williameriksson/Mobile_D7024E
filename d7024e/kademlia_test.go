@@ -2,8 +2,9 @@ package d7024e_test
 
 import (
 	"Mobile_D7024E/d7024e"
-	"testing"
 	"fmt"
+	"testing"
+	"time"
 )
 
 const timeOut time.Duration = (2 * time.Second)

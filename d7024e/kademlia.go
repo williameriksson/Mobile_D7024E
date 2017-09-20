@@ -3,9 +3,9 @@ package d7024e
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"strconv"
 	"time"
-	"io/ioutil"
 )
 
 const alpha int = 3
@@ -40,7 +40,7 @@ func (kademlia *Kademlia) Run(connectIP string, myIP string) {
 
 func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 
-	myID := NewRandomKademliaID()        //temp ID
+	myID := NewRandomKademliaID() //temp ID
 	fmt.Printf("ID: 0x%X\n", myID)
 	bootStrapID := NewRandomKademliaID() //20 byte id temp ID TODO: bootstrap should NOT be assigned a random ID.
 
@@ -73,9 +73,9 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 				kademlia.LookupNode(&kademlia.RoutingTable.me.ID, queriedNodes, nodeCandidates, 0)
 				// kademlia.Network.SendFindNodeMessage(&bootStrapNode, kademlia.RoutingTable.me.ID) // QUESTION: Why was this commented out?
 				break
-				} else {
-					fmt.Println("Expected PING_ACK, instead got: ", confirmation.Command, "will keep waiting for PING_ACK")
-				}
+			} else {
+				fmt.Println("Expected PING_ACK, instead got: ", confirmation.Command, "will keep waiting for PING_ACK")
+			}
 
 		}
 	}
@@ -132,7 +132,7 @@ func (kademlia *Kademlia) channelReader() {
 		default:
 			fmt.Println("GOT DEFAULT")
 		}
-		kademlia.WriteToFile(kademlia.RoutingTable.me.ID.String(), []byte(kademlia.RoutingTable.GetRoutingTable()))
+		kademlia.WriteToFile(kademlia.RoutingTable.me.ID.String()+".txt", []byte(kademlia.RoutingTable.GetRoutingTable()))
 	}
 }
 
@@ -194,33 +194,29 @@ func (kademlia *Kademlia) LookupNode(target *KademliaID, queriedNodes map[string
 		if queriedNodes[target.String()] == false {
 			queriedNodes[target.String()] = true
 			kademlia.Network.SendFindNodeMessage(&closestNodes[i], target)
-		} else {
-
 		}
 	}
 
 	timeout := false
 	timeStamp := time.Now()
 
-	for kademlia.LookupCount < alpha && (kademlia.LookupCount < len(closestNodes) && len(closestNodes) < alpha) && !timeout {
-		//busy waiting for RETURN_FIND_NODE
+	for kademlia.LookupCount < 1 && !timeout {
+		//busy waiting for at least one RETURN_FIND_NODE
 		if time.Now().Sub(timeStamp) > timeOutTime {
 			timeout = true
 		}
 	}
 
-	if !timeout {
-		kademlia.returnedNodes.Sort() //what does this do
-		bestNodes := NodeCandidates{nodes: kademlia.returnedNodes.GetNodes(k)}
-		if bestNodes.nodes[0].ID.String() == target.String() {
-			//first node IS target means we DID find it this run.
-		} else if recCount == k {
-			//did NOT find node after k attempts
+	kademlia.returnedNodes.Sort() //what does this do
+	bestNodes := NodeCandidates{nodes: kademlia.returnedNodes.GetNodes(k)}
+	if bestNodes.nodes[0].ID.String() == target.String() {
+		//first node IS target means we DID find it this run.
+	} else if recCount == k {
+		//did NOT find node after k attempts
 
-		} else {
-			//did NOT find node, continue search
-			kademlia.LookupNode(target, queriedNodes, bestNodes, 0)
-		}
+	} else {
+		//did NOT find node, continue search
+		kademlia.LookupNode(target, queriedNodes, bestNodes, (recCount + 1))
 	}
 }
 
