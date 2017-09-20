@@ -1,7 +1,7 @@
 package d7024e_test
 
 import (
-	"mobile_sys/d7024e"
+	"Mobile_D7024E/d7024e"
 	"strconv"
 	"testing"
 )

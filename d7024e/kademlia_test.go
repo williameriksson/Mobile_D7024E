@@ -3,10 +3,6 @@ package d7024e_test
 import (
 	"Mobile_D7024E/d7024e"
 	"testing"
-<<<<<<< HEAD
-	//"fmt"
-=======
->>>>>>> refs/remotes/origin/master
 	"time"
 )
 
@@ -24,6 +20,7 @@ func TestKademliaInstantiation(t *testing.T) {
 }
 
 func TestStore(t *testing.T) {
+	// THIS IS NOT FINAL, SHOULD BE MADE TO BLOCK INSTEAD OF SLEEP
 	kademlia1 := d7024e.NewKademlia()
 	go kademlia1.Run("", "127.0.0.1:8000")
 

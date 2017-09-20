@@ -12,7 +12,7 @@ type RoutingTable struct {
 func NewRoutingTable(me Node) *RoutingTable {
 	routingTable := &RoutingTable{}
 	for i := 0; i < IDLength*8; i++ {
-		routingTable.buckets[i] = newBucket()
+		routingTable.buckets[i] = NewBucket()
 	}
 	routingTable.me = me
 	return routingTable

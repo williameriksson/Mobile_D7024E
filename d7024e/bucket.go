@@ -9,7 +9,7 @@ type bucket struct {
 	list *list.List
 }
 
-func newBucket() *bucket {
+func NewBucket() *bucket {
 	bucket := &bucket{}
 	bucket.list = list.New()
 	return bucket
