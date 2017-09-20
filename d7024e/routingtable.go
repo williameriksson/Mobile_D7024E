@@ -1,7 +1,9 @@
 package d7024e
+
 //import "fmt"
 
 const bucketSize = 20
+
 type RoutingTable struct {
 	me      Node
 	buckets [IDLength * 8]*bucket
@@ -48,7 +50,7 @@ func (routingTable *RoutingTable) FindClosestNodes(target *KademliaID, count int
 		count = candidates.Len()
 	}
 	//fmt.Println(candidates.GetNodes(count))
-	candidates.Print()
+	// candidates.Print()
 	return candidates.GetNodes(count)
 }
 
@@ -64,7 +66,6 @@ func (routingTable *RoutingTable) getBucketIndex(id *KademliaID) int {
 
 	return IDLength*8 - 1
 }
-
 
 // Returns a string with all nodeID entries of the routingtable,
 // for testing purposes

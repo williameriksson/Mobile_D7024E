@@ -200,23 +200,25 @@ func (kademlia *Kademlia) LookupNode(target *KademliaID, queriedNodes map[string
 	timeout := false
 	timeStamp := time.Now()
 
-	for kademlia.LookupCount < 1 && !timeout {
+	for (kademlia.LookupCount < 1) && !timeout {
 		//busy waiting for at least one RETURN_FIND_NODE
 		if time.Now().Sub(timeStamp) > timeOutTime {
 			timeout = true
 		}
 	}
 
-	kademlia.returnedNodes.Sort() //what does this do
-	bestNodes := NodeCandidates{nodes: kademlia.returnedNodes.GetNodes(k)}
-	if bestNodes.nodes[0].ID.String() == target.String() {
-		//first node IS target means we DID find it this run.
-	} else if recCount == k {
-		//did NOT find node after k attempts
+	if !timeout {
+		kademlia.returnedNodes.Sort() //what does this do
+		bestNodes := NodeCandidates{nodes: kademlia.returnedNodes.GetNodes(k)}
+		if bestNodes.nodes[0].ID.String() == target.String() {
+			//first node IS target means we DID find it this run.
+		} else if recCount == k {
+			//did NOT find node after k attempts
 
-	} else {
-		//did NOT find node, continue search
-		kademlia.LookupNode(target, queriedNodes, bestNodes, (recCount + 1))
+		} else {
+			//did NOT find node, continue search
+			kademlia.LookupNode(target, queriedNodes, bestNodes, (recCount + 1))
+		}
 	}
 }
 
