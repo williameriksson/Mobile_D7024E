@@ -3,7 +3,10 @@ package d7024e_test
 import (
 	"Mobile_D7024E/d7024e"
 	"testing"
+<<<<<<< HEAD
 	//"fmt"
+=======
+>>>>>>> refs/remotes/origin/master
 	"time"
 )
 
