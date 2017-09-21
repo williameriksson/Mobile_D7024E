@@ -24,12 +24,11 @@ func TestStore(t *testing.T) {
 	kademlia1 := d7024e.NewKademlia()
 	go kademlia1.Run("", "127.0.0.1:8000")
 
-	time.Sleep(time.Millisecond * 1000)
 
 	kademlia2 := d7024e.NewKademlia()
 	go kademlia2.Run("127.0.0.1:8000", "127.0.0.1:8002")
 
-	time.Sleep(time.Millisecond * 1000)
+	time.Sleep(time.Millisecond * 500)
 
 	data := []byte("Test String")
 	hash := d7024e.HashData(data)
@@ -37,11 +36,11 @@ func TestStore(t *testing.T) {
 	//fmt.Printf("node: %x\n", nodes[0].ID)
 	kademlia2.Network.SendStoreMessage(&nodes[0], data)
 
-	time.Sleep(time.Millisecond * 1000)
+	time.Sleep(time.Millisecond * 500)
 
 	kademlia1.LookupValue(hash)
 
-	time.Sleep(time.Millisecond * 1000)
+	time.Sleep(time.Millisecond * 500)
 }
 /*
 func TestKademlia(t *testing.T) {

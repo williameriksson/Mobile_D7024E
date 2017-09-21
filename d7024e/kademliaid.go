@@ -3,6 +3,7 @@ package d7024e
 import (
 	"encoding/hex"
 	"math/rand"
+	"strings"
 )
 
 const IDLength = 20
@@ -46,6 +47,9 @@ func (kademliaID KademliaID) Equals(otherKademliaID *KademliaID) bool {
 	return true
 }
 
+/* 
+ * Calculates the logical XOR distance between this KademliaID and another KademliaID
+ */
 func (kademliaID KademliaID) CalcDistance(target *KademliaID) *KademliaID {
 	result := KademliaID{}
 	for i := 0; i < IDLength; i++ {
@@ -55,5 +59,5 @@ func (kademliaID KademliaID) CalcDistance(target *KademliaID) *KademliaID {
 }
 
 func (kademliaID *KademliaID) String() string {
-	return hex.EncodeToString(kademliaID[0:IDLength])
+	return strings.ToUpper(hex.EncodeToString(kademliaID[0:IDLength]))
 }
