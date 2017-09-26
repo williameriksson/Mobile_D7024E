@@ -1,41 +1,30 @@
 package main
 
 import (
-	"Mobile_D7024E/d7024e"
-	// "fmt"
-	"strconv"
+	"log"
 	"time"
+    "Mobile_D7024E/api"
 )
+
+const running_time time.Duration = 30 * time.Second
 
 func main() {
 
-	kademlia1 := d7024e.NewKademlia()
-	go kademlia1.Run("", "127.0.0.1:8000")
-	time.Sleep(time.Millisecond * 1000)
+	log.Printf("main: starting HTTP server")
 
-	var port int = 8001
-	for i := 0; i < 5; i++ {
-		go d7024e.NewKademlia().Run("127.0.0.1:8000", "127.0.0.1:"+strconv.Itoa(port+i))
-		time.Sleep(time.Millisecond * 1000)
-	}
+    srv := api.StartHttpNewServer()
 
-	/* Davids Test Code */
-	// data := d7024e.HashStr("Teststring")
-	// kademlia.Store(data)
-	// kademlia.LookupData(d7024e.HashData(data))
-	/* End of Davids Test Code */
-	for {
-		// select {
-		// case msg := <-kademlia1.Network.TestChannel:
-		// 	fmt.Println(msg)
-		// case msg := <-kademlia2.Network.TestChannel:
-		// 	fmt.Println(msg)
-		// case msg := <-kademlia3.Network.TestChannel:
-		// 	fmt.Println(msg)
-		// case msg := <-kademlia4.Network.TestChannel:
-		// 	fmt.Println(msg)
-		// case msg := <-kademlia5.Network.TestChannel:
-		// 	fmt.Println(msg)
-		// }
-	}
+    log.Printf("main: serving for %v", running_time)
+
+    time.Sleep(running_time)
+
+    log.Printf("main: stopping HTTP server")
+
+    // now close the server gracefully ("shutdown")
+    // timeout could be given instead of nil as a https://golang.org/pkg/context/
+    if err := srv.Shutdown(nil); err != nil {
+        panic(err) // failure/timeout shutting down the server gracefully
+    }
+
+    log.Printf("main: done. exiting")
 }
