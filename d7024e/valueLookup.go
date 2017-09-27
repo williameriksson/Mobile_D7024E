@@ -66,18 +66,28 @@ func (kademlia *Kademlia) LookupValue(hash *KademliaID, queriedNodes map[string]
 		}
 	}
 
+  for i := 0; i < len(kademlia.returnedValueNodes.nodes); i++ {
+    kademlia.returnedValueNodes.nodes[i].CalcDistance(hash)
+  }
+  kademlia.returnedValueNodes.Sort()
+
 	if !timeout || timeout {
     if len(kademlia.returnedValue) != 0 {
+      // We got the value, now we cache it in the closest node to the target that didn't have it
+      // How do we make sure this isn't the node that we got it from? Maybe we have to save
+      // the id of the node that sent the data and remove it from consideration. For now we just take
+      // the node with the closest ID to the key
+      if (len(kademlia.returnedValueNodes.nodes) > 0) {
+        kademlia.Network.SendStoreMessage(&kademlia.returnedValueNodes.nodes[0], kademlia.returnedValue)
+      }
+      
       fmt.Println("Value found, let's do something with it.", kademlia.returnedValue)
-      //kademlia.returnedValue = nil
+
+      kademlia.returnedValue = nil
       return
     }
-    fmt.Println("RETURNEDVALUENODES: ", kademlia.returnedValueNodes)
-    for i := 0; i < len(kademlia.returnedValueNodes.nodes); i++ {
+    //fmt.Println("RETURNEDVALUENODES: ", kademlia.returnedValueNodes)
 
-      kademlia.returnedValueNodes.nodes[i].CalcDistance(hash)
-    }
-		kademlia.returnedValueNodes.Sort() //what does this do
 
     var length int
     if length = k; kademlia.returnedValueNodes.Len() < k {

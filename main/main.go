@@ -33,18 +33,19 @@ func main() {
 	}
 
 
-	/* Davids Test Code */
 
-	data := d7024e.HashStr("Test")
+	data := []byte("Test")
+	kademlia1.PublishData(data)
+	/* Davids Test Code */
 
 	// n := bytes.IndexByte(data, 0)
 	// dataHash := d7024e.NewKademliaID(string(data[:n]))
 	// kademlia1.Store(data)
-	hash := d7024e.HashData(data)
 	// kademlia1.PrintHashTable()
 	// fmt.Println("THE DATA:", data)
 	// fmt.Println("THE HASH:", hash)
-	time.Sleep(time.Millisecond * 1000)
+	time.Sleep(time.Millisecond * 1500)
+	hash := d7024e.HashData(data)
 	lastKademlia.LookupValue(d7024e.NewKademliaID(hash), make(map[string]bool), d7024e.NodeCandidates{}, 0)
 	// kademlia1.LookupValue(d7024e.HashData(data))
 	/* End of Davids Test Code */

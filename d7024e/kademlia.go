@@ -21,6 +21,7 @@ type Kademlia struct {
 	returnedNodes NodeCandidates
 	returnedValueNodes NodeCandidates
 	returnedValue []byte
+	// Add DataInformation here
 }
 
 // Constructor
@@ -53,8 +54,7 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 	kademlia.Network = Network{me: &kademlia.RoutingTable.me, MsgChannel: make(chan Message), TestChannel: make(chan string, 100)}
 	kademlia.Network.TestChannel <- ("My ID : " + myID.String())
 
-	data := HashStr("Test")
-	kademlia.Store(data)
+
 
 	conn := kademlia.Network.Listen(myIP)
 	kademlia.Network.Conn = conn
@@ -265,6 +265,15 @@ func (kademlia *Kademlia) LookupNode2(target *KademliaID) {
 	}
 
 }*/
+
+func (kademlia *Kademlia) PublishData(data []byte) {
+	hash := HashData(data)
+	closestNodes := kademlia.RoutingTable.FindClosestNodes(NewKademliaID(hash), k)
+	for i := 0; i < len(closestNodes); i++ {
+    kademlia.Network.SendStoreMessage(&closestNodes[i], data)
+	}
+	kademlia.Store(data)
+}
 
 func (kademlia *Kademlia) Store(data []byte) {
 	hash := HashData(data)
