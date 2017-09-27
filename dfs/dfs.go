@@ -11,7 +11,6 @@ import (
 // Compile command (For Windows): GOOS=windows GOARCH=amd64 go build -o dfs.exe dfs.go
 
 const addr string = "http://127.0.0.1:8080"
-const port string = "8080"
 
 func main() {
 	cmds := os.Args
@@ -31,7 +30,6 @@ func main() {
 	default:
 		log.Fatal("Unknown argument ", cmds[1])
 	}
-	//fmt.Println(file)
 }
 
 func get(url string) {
