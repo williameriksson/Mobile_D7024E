@@ -8,19 +8,19 @@ import (
 type Node struct {
 	ID       KademliaID
 	Address  string
-	distance *KademliaID
+	distance KademliaID
 }
 
 func NewNode(id *KademliaID, address string) Node {
-	return Node{*id, address, nil}
+	return Node{ID: *id, Address: address}
 }
 
 func (node *Node) CalcDistance(target *KademliaID) {
-	node.distance = node.ID.CalcDistance(target)
+	node.distance = *node.ID.CalcDistance(target)
 }
 
 func (node *Node) Less(otherNode *Node) bool {
-	return node.distance.Less(otherNode.distance)
+	return node.distance.Less(&otherNode.distance)
 }
 
 func (node *Node) String() string {
@@ -57,7 +57,7 @@ func (candidates *NodeCandidates) Less(i, j int) bool {
 
 func (candidates *NodeCandidates) Print() {
 	for _, node := range candidates.nodes {
-		fmt.Printf("ID: 0x%X, IP: %v, Distance: 0x%X \n", node.ID, node.Address, *node.distance)
+		fmt.Printf("ID: 0x%X, IP: %v, Distance: 0x%X \n", node.ID, node.Address, node.distance)
 	}
-	
+
 }

@@ -16,7 +16,6 @@ type Network struct {
 type Message struct {
 	Command    string
 	SenderNode Node
-	Hash       string
 	Data       []byte
 }
 
@@ -34,7 +33,7 @@ func (network *Network) Listen(myIP string) *net.UDPConn {
 }
 
 func (network *Network) HandleConnection() {
-	buf := make([]byte, 2048)
+	buf := make([]byte, 65507)
 	var msg Message
 
 	defer network.Conn.Close()
@@ -65,7 +64,9 @@ func (network *Network) SendPingAck(receiverNode *Node) {
 }
 
 func (network *Network) SendFindNodeMessage(receiverNode *Node, kiD *KademliaID) {
-	data := []byte(kiD.String())
+	//data := []byte(kiD.String())
+	data, err := json.Marshal(kiD)
+	checkError(err)
 	go network.sendMessage(receiverNode, &Message{Command: cmd_find_node, SenderNode: *network.me, Data: data})
 }
 
@@ -75,8 +76,22 @@ func (network *Network) SendReturnFindNodeMessage(receiverNode *Node, nodeList [
 	go network.sendMessage(receiverNode, &Message{Command: cmd_find_node_returned, SenderNode: *network.me, Data: data})
 }
 
-func (network *Network) SendFindDataMessage(receiverNode *Node, hash string) {
-	go network.sendMessage(receiverNode, &Message{Command: cmd_find_value, SenderNode: *network.me, Hash: hash})
+func (network *Network) SendFindDataMessage(receiverNode *Node, hash *KademliaID) {
+	data, err := json.Marshal(hash)
+	checkError(err)
+	go network.sendMessage(receiverNode, &Message{Command: cmd_find_value, SenderNode: *network.me, Data: data})
+}
+
+// If you don't hold the requested data, return the closest nodes list.
+func (network *Network) SendReturnFindDataMessage(receiverNode *Node, nodeList []Node) {
+	data, err := json.Marshal(nodeList)
+	checkError(err)
+	go network.sendMessage(receiverNode, &Message{Command: cmd_find_value_returned, SenderNode: *network.me, Data: data})
+}
+
+// If you hold the requested data, return it.
+func (network *Network) SendReturnDataMessage(receiverNode *Node, data []byte) {
+	go network.sendMessage(receiverNode, &Message{Command: cmd_value_returned, SenderNode: *network.me, Data: data})
 }
 
 func (network *Network) SendStoreMessage(receiverNode *Node, data []byte) {
