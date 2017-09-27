@@ -6,13 +6,13 @@ import (
     "Mobile_D7024E/api"
 )
 
-const running_time time.Duration = 30 * time.Second
+const running_time time.Duration = 60 * time.Second
 
 func main() {
 
 	log.Printf("main: starting HTTP server")
 
-    srv := api.StartHttpNewServer()
+    srv := api.StartNewHttpServer()
 
     log.Printf("main: serving for %v", running_time)
 
