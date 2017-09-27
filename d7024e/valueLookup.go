@@ -3,6 +3,7 @@ package d7024e
 import (
   "fmt"
   "time"
+  "strings"
 )
 
 func (kademlia *Kademlia) FindValueReturn(senderNode *Node, nodeList []Node) {
@@ -15,12 +16,19 @@ func (kademlia *Kademlia) FindValueReturn(senderNode *Node, nodeList []Node) {
 	}
 }
 
+func (kademlia *Kademlia) PrintHashTable() {
+  for key, value := range kademlia.files {
+    fmt.Println("Key:", key, "Value:", value)
+  }
+}
+
 func (kademlia *Kademlia) FindValue(senderNode *Node, hash *KademliaID) {
   // If THIS node has the value, return it
   for key, value := range kademlia.files {
     fmt.Println("Key:", key, "Value:", value)
   }
-  if val, ok := kademlia.files[hash.String()]; ok {
+  fmt.Println("LOOKING FOR THIS HASH: ", strings.TrimSpace(strings.ToLower(hash.String())))
+  if val, ok := kademlia.files[strings.TrimSpace(strings.ToLower(hash.String()))]; ok {
     kademlia.Network.SendReturnDataMessage(senderNode, val)
     fmt.Printf("Yes, the value is %x \n", val)
   } else {
@@ -43,6 +51,7 @@ func (kademlia *Kademlia) LookupValue(hash *KademliaID, queriedNodes map[string]
 	for i := 0; i < alpha && i < len(closestNodes); i++ {
 		if queriedNodes[hash.String()] == false {
 			queriedNodes[hash.String()] = true
+      fmt.Println("!!!!!SENDING THE FIND DATA MESSAGE!!!!!")
       kademlia.Network.SendFindDataMessage(&closestNodes[i], hash)
 		}
 	}
@@ -64,6 +73,10 @@ func (kademlia *Kademlia) LookupValue(hash *KademliaID, queriedNodes map[string]
       return
     }
     fmt.Println("RETURNEDVALUENODES: ", kademlia.returnedValueNodes)
+    for i := 0; i < len(kademlia.returnedValueNodes.nodes); i++ {
+
+      kademlia.returnedValueNodes.nodes[i].CalcDistance(hash)
+    }
 		kademlia.returnedValueNodes.Sort() //what does this do
 
     var length int

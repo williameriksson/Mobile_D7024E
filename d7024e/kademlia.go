@@ -53,6 +53,9 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 	kademlia.Network = Network{me: &kademlia.RoutingTable.me, MsgChannel: make(chan Message), TestChannel: make(chan string, 100)}
 	kademlia.Network.TestChannel <- ("My ID : " + myID.String())
 
+	data := HashStr("Test")
+	kademlia.Store(data)
+
 	conn := kademlia.Network.Listen(myIP)
 	kademlia.Network.Conn = conn
 	go kademlia.Network.HandleConnection()
@@ -147,13 +150,23 @@ func (kademlia *Kademlia) channelReader() {
 			kademlia.FindValueReturn(&msg.SenderNode, nodeList)
 
 		case cmd_value_returned:
+			fmt.Println("WOW I GOT A VALUE RETURNED TO ME, DAAAMN!!")
 			//Some node has returned the value that THIS node requested
 			kademlia.returnedValue = msg.Data
+			kademlia.Store(msg.Data)
 
 		default:
 			fmt.Println("GOT DEFAULT")
 		}
-		kademlia.WriteToFile(kademlia.RoutingTable.me.ID.String()+".txt", []byte(kademlia.RoutingTable.GetRoutingTable()))
+		tmpString := ""
+
+		for key, value := range kademlia.files {
+	    tmpString += "Key: " + key + "Value: " + string(value)
+	  }
+
+
+		kademlia.WriteToFile(kademlia.RoutingTable.me.ID.String()+".txt", []byte(tmpString))
+		//kademlia.WriteToFile(kademlia.RoutingTable.me.ID.String()+".txt", []byte(kademlia.RoutingTable.GetRoutingTable()))
 	}
 }
 

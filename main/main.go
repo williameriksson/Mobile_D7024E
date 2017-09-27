@@ -2,7 +2,7 @@ package main
 
 import (
 	"Mobile_D7024E/d7024e"
-	"fmt"
+	//"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -39,10 +39,11 @@ func main() {
 
 	// n := bytes.IndexByte(data, 0)
 	// dataHash := d7024e.NewKademliaID(string(data[:n]))
-	kademlia1.Store(data)
+	// kademlia1.Store(data)
 	hash := d7024e.HashData(data)
-	fmt.Println("THE DATA:", data)
-	fmt.Println("THE HASH:", hash)
+	// kademlia1.PrintHashTable()
+	// fmt.Println("THE DATA:", data)
+	// fmt.Println("THE HASH:", hash)
 	time.Sleep(time.Millisecond * 1000)
 	lastKademlia.LookupValue(d7024e.NewKademliaID(hash), make(map[string]bool), d7024e.NodeCandidates{}, 0)
 	// kademlia1.LookupValue(d7024e.HashData(data))
