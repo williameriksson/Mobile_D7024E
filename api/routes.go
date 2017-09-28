@@ -42,4 +42,10 @@ var routes = Routes{
 		"/unpin/{hash}",
 		Unpin,
 	},
+	Route{
+		"AddNode",
+		"GET",
+		"/addnode/{addr}",
+		AddNode,
+	},
 }

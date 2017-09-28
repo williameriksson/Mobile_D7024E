@@ -9,10 +9,11 @@ import (
 	//"strconv"
 
 	"github.com/gorilla/mux"
+	"Mobile_D7024E/d7024e"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Kademlia API:\nGET: /cat/{hash}\nPOST: /store/\nGET: /pin/{hash}\nGET: /unpin/{hash}")
+	fmt.Fprint(w, "Kademlia API:\nGET: /cat/{hash}\nPOST: /store/\nGET: /pin/{hash}\nGET: /unpin/{hash}\n GET:/addnode/{addr}?boostrap={addr}")
 }
 
 func Cat(w http.ResponseWriter, r *http.Request) {
@@ -35,4 +36,13 @@ func Unpin(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Unpin endpoint")
 	vars := mux.Vars(r)
 	fmt.Fprintln(w, vars["hash"])
+}
+
+func AddNode(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	addr := vars["addr"]
+	bootstrap := r.FormValue("bootstrap")
+
+	kademlia := d7024e.NewKademlia()
+	go kademlia.Run(bootstrap, addr)
 }

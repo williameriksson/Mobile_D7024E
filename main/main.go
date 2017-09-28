@@ -1,19 +1,23 @@
 package main
 
 import (
-	"log"
+	//"log"
 	"time"
     "Mobile_D7024E/api"
 )
 
 const running_time time.Duration = 60 * time.Second
 
+// build: go build -o main.exe main.go
+
 func main() {
 
-	log.Printf("main: starting HTTP server")
+	//log.Printf("main: starting HTTP server")
+
+    api.StartServer()
+/*
 
     srv := api.StartNewHttpServer()
-
     log.Printf("main: serving for %v", running_time)
 
     time.Sleep(running_time)
@@ -26,5 +30,5 @@ func main() {
         panic(err) // failure/timeout shutting down the server gracefully
     }
 
-    log.Printf("main: done. exiting")
+    log.Printf("main: done. exiting")*/
 }

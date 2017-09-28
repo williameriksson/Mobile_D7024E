@@ -6,11 +6,33 @@ import (
     "github.com/gorilla/mux"
 )
 
+const port string = ":8080"
 
-func StartNewHttpServer() *http.Server {
+func StartServer() {
     router := mux.NewRouter().StrictSlash(true)
 
-    srv := &http.Server{Addr: ":8080", Handler: router}
+    for _, route := range routes {
+        var handler http.Handler
+
+        handler = route.HandlerFunc
+        handler = Logger(handler, route.Name)
+
+        router.
+            Methods(route.Method).
+            Path(route.Pattern).
+            Name(route.Name).
+            Handler(handler)
+
+    }
+
+    log.Fatal(http.ListenAndServe(port, router))
+}
+
+// Returns a server object so it can be shut down
+func StartAndReturnServer() *http.Server {
+    router := mux.NewRouter().StrictSlash(true)
+
+    srv := &http.Server{Addr: port, Handler: router}
 
     for _, route := range routes {
         var handler http.Handler
