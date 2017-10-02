@@ -21,7 +21,7 @@ type Kademlia struct {
 	returnedNodes NodeCandidates
 	returnedValueNodes NodeCandidates
 	returnedValue []byte
-	// Add DataInformation here
+	Datainfo	DataInformation
 }
 
 // Constructor
