@@ -34,6 +34,14 @@ func (routingTable *RoutingTable) AddNode(node Node) {
 	}
 }
 
+func (routingTable *RoutingTable) RemoveNode(node *Node) {
+	if !node.ID.Equals(&routingTable.me.ID) {
+		bucketIndex := routingTable.GetBucketIndex(&node.ID)
+		bucket := routingTable.buckets[bucketIndex]
+		bucket.RemoveNode(node)
+	}
+}
+
 func (routingTable *RoutingTable) FindClosestNodes(target *KademliaID, count int) []Node {
 	var candidates NodeCandidates
 	bucketIndex := routingTable.GetBucketIndex(target)
@@ -90,6 +98,14 @@ func (routingTable *RoutingTable) GetRandomIDInBucket(bucketIndex int) *Kademlia
 	str := hex.EncodeToString(meData)
 	kdID := NewKademliaID(str)
 	return kdID
+}
+
+func (routingTable *RoutingTable) GetSize() int {
+	var size int
+	for i := 0; i < (IDLength * 8); i++ {
+		size += routingTable.buckets[i].list.Len()
+	}
+	return size
 }
 
 // Returns a string with all nodeID entries of the routingtable,

@@ -225,20 +225,11 @@ func (kademlia *Kademlia) RefreshBuckets() {
 }
 
 func (kademlia *Kademlia) PingAllNodes() {
-	nodes := kademlia.RoutingTable.FindClosestNodes(&kademlia.RoutingTable.me.ID, k)
+	nodes := kademlia.RoutingTable.FindClosestNodes(&kademlia.RoutingTable.me.ID, kademlia.RoutingTable.GetSize())
 	for i := 0; i < len(nodes); i++ {
 		kademlia.Network.SendPingMessage(&nodes[i])
 	}
 }
-
-/*
-func (kademlia *Kademlia) LookupNode2(target *KademliaID) {
-	closestNodes []Node = kademlia.RoutingTable.FindClosestNodes(target, alpha)
-	for _, node := range closestNodes {
-		kademlia.Network.SendFindNodeMessage(node, target)
-	}
-
-}*/
 
 func (kademlia *Kademlia) LookupValue(hash string) {
 	// If the node has the value, return it

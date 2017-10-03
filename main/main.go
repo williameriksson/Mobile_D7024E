@@ -14,9 +14,9 @@ func main() {
 	time.Sleep(time.Millisecond * 1000)
 
 	var port int = 8001
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 25; i++ {
 		go d7024e.NewKademlia().Run("127.0.0.1:8000", "127.0.0.1:"+strconv.Itoa(port+i))
-		time.Sleep(time.Millisecond * 1000)
+		time.Sleep(time.Millisecond * 500)
 	}
 
 	/* Davids Test Code */

@@ -35,6 +35,16 @@ func (bucket *bucket) AddNode(node Node) {
 	}
 }
 
+func (bucket *bucket) RemoveNode(node *Node) {
+	for e := bucket.list.Front(); e != nil; e = e.Next() {
+		nodeID := e.Value.(Node).ID
+
+		if (node).ID.Equals(&nodeID) {
+			bucket.list.Remove(e)
+		}
+	}
+}
+
 func (bucket *bucket) GetNodeAndCalcDistance(target *KademliaID) []Node {
 	var nodes []Node
 

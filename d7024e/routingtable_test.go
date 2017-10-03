@@ -39,3 +39,30 @@ func TestRoutingTable(t *testing.T) {
 		}
 	}
 }
+
+func TestRemoveNodeRoutingTable(t *testing.T) {
+	myNode := d7024e.NewNode(d7024e.NewKademliaID("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"), "localhost:8000")
+	otherNode := d7024e.NewNode(d7024e.NewKademliaID("0000000000000000000000000000000000000000"), "localhost:8001")
+
+	rt := d7024e.NewRoutingTable(myNode)
+	rt.AddNode(otherNode)
+	if len(rt.FindClosestNodes(&otherNode.ID, 1)) != 1 {
+		t.Error("failed to add bucket")
+	}
+
+	rt.RemoveNode(&otherNode)
+	if len(rt.FindClosestNodes(&otherNode.ID, 1)) != 0 {
+		t.Error("failed to remove bucket")
+	}
+}
+
+func TestSizeRoutingTable(t *testing.T) {
+	myNode := d7024e.NewNode(d7024e.NewKademliaID("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"), "localhost:8000")
+	otherNode := d7024e.NewNode(d7024e.NewKademliaID("0000000000000000000000000000000000000000"), "localhost:8001")
+
+	rt := d7024e.NewRoutingTable(myNode)
+	rt.AddNode(otherNode)
+	if rt.GetSize() != 1 {
+		t.Error("size failed")
+	}
+}
