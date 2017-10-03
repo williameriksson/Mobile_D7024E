@@ -31,7 +31,7 @@ func (kademlia *Kademlia) RepublishData() {
 // Should periodically call itself (needs testing), could be changed to trigger on next event
 // if sorting mechanism is implemented
 func (kademlia *Kademlia) PurgeData() {
-
+  
   for _, purgeInfo := range kademlia.Datainfo.PurgeInfos {
     if !purgeInfo.Pinned && time.Now().After(purgeInfo.PurgeTimeStamp){
       // TODO: Add functionality to remove the actual file also

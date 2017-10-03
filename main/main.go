@@ -11,7 +11,7 @@ import (
 	//"bytes"
 )
 
-func main() {
+// build: go build -o main.exe main.go
 
 	c := make(chan os.Signal, 2)
     signal.Notify(c, os.Interrupt, syscall.SIGTERM)

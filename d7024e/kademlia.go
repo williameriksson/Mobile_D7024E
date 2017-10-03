@@ -14,7 +14,7 @@ const timeOutTime time.Duration = 1000
 
 type Kademlia struct {
 	Network       Network
-	files         map[string][]byte // Hash table mapping sha-1 hash (base64 encoded) to some data
+	files         map[string]string // Hash table mapping sha-1 hash (base64 encoded) to some data
 	RoutingTable  *RoutingTable
 	LookupCount   int
 	LookupValueCount int
@@ -27,7 +27,7 @@ type Kademlia struct {
 // Constructor
 func NewKademlia() *Kademlia {
 	var kademlia Kademlia
-	kademlia.files = make(map[string][]byte)
+	kademlia.files = make(map[string]string)
 	return &kademlia
 }
 
@@ -277,6 +277,14 @@ func (kademlia *Kademlia) PublishData(data []byte) {
 	kademlia.Store(data, true)
 }
 
+func (kademlia *Kademlia) Get(hash string) string{
+	return kademlia.files[hash]
+}
+
+func (kademlia *Kademlia) Store(hash string, path string){
+	kademlia.files[hash] = path
+}
+/*
 func (kademlia *Kademlia) Store(fileName []byte, me bool) {
 	hash := HashData(fileName)
 	kademlia.files[hash] = fileName
@@ -302,7 +310,7 @@ func (kademlia *Kademlia) Store(fileName []byte, me bool) {
 	kademlia.SetPurgeStamp(&newPurgeInfo)
 	kademlia.Datainfo.PurgeInfos = append(kademlia.Datainfo.PurgeInfos, newPurgeInfo)
 
-}
+}*/
 
 func (kademlia *Kademlia) WriteToFile(path string, data []byte) {
 	err := ioutil.WriteFile(path, data, 0644)
