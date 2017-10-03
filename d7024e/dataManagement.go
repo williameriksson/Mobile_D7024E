@@ -10,19 +10,19 @@ const (
 )
 
 type PurgeInformation struct {
-  FileName        string
+  Key             string
   Pinned          bool
   PurgeTimeStamp  time.Time
 }
 
 type DataInformation struct {
-  MyFileNames  []string
+  MyKeys       []string
   PurgeInfos   []PurgeInformation
 }
 
 func (kademlia *Kademlia) RepublishData() {
-  for _, myFile := range kademlia.Datainfo.MyFileNames {
-    kademlia.PublishData([]byte(myFile))
+  for _, myKey := range kademlia.Datainfo.MyKeys {
+    kademlia.PublishData(myKey, kademlia.files[myKey])
   }
   time.AfterFunc(REPUBLISHINTERVAL, kademlia.RepublishData)
 }
@@ -31,11 +31,11 @@ func (kademlia *Kademlia) RepublishData() {
 // Should periodically call itself (needs testing), could be changed to trigger on next event
 // if sorting mechanism is implemented
 func (kademlia *Kademlia) PurgeData() {
-  
+
   for _, purgeInfo := range kademlia.Datainfo.PurgeInfos {
     if !purgeInfo.Pinned && time.Now().After(purgeInfo.PurgeTimeStamp){
       // TODO: Add functionality to remove the actual file also
-      delete(kademlia.files, HashData([]byte(purgeInfo.FileName)))
+      delete(kademlia.files, purgeInfo.Key)
     }
   }
   time.AfterFunc(PURGEINTERVAL, kademlia.PurgeData)

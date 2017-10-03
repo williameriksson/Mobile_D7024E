@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"strconv"
+	//"strconv"
 	"time"
 )
 
@@ -113,6 +113,9 @@ const cmd_find_node_returned = "FIND_NODE_RETURNED"
 const cmd_find_value_returned = "FIND_VALUE_RETURNED"
 const cmd_value_returned = "VALUE_RETURNED"
 
+// TODO: FIX THE PATH OS INDEPENDETN
+const DOWNLOAD_PATH = "./Downloads"
+
 func (kademlia *Kademlia) channelReader() {
 	for {
 		//halts here waiting for a command.
@@ -128,7 +131,7 @@ func (kademlia *Kademlia) channelReader() {
 		case cmd_store:
 			fmt.Println("GOT " + cmd_store)
 			// TODO: Add call to own server to establish tcp conn and get the actual file
-			kademlia.Store(msg.Data, false)
+			kademlia.Store(string(msg.Data), DOWNLOAD_PATH, false)
 
 		case cmd_find_node:
 			//THIS node has recived a request to find a certain node (from some other node)
@@ -269,49 +272,49 @@ func (kademlia *Kademlia) PingAllNodes() {
 	}
 }
 
-func (kademlia *Kademlia) PublishData(data []byte) {
-	hash := HashData(data)
+func (kademlia *Kademlia) PublishData(hash string, path string) {
+
 	closestNodes := kademlia.RoutingTable.FindClosestNodes(NewKademliaID(hash), k)
 	for i := 0; i < len(closestNodes); i++ {
-    kademlia.Network.SendStoreMessage(&closestNodes[i], data)
+    kademlia.Network.SendStoreMessage(&closestNodes[i], []byte(hash))
 	}
-	kademlia.Store(data, true)
+	kademlia.Store(hash, path, true)
 }
 
 func (kademlia *Kademlia) Get(hash string) string{
 	return kademlia.files[hash]
 }
 
-func (kademlia *Kademlia) Store(hash string, path string){
+/*func (kademlia *Kademlia) Store(hash string, path string){
 	kademlia.files[hash] = path
-}
-/*
-func (kademlia *Kademlia) Store(fileName []byte, me bool) {
-	hash := HashData(fileName)
-	kademlia.files[hash] = fileName
+}*/
+
+func (kademlia *Kademlia) Store(hash string, path string, me bool) {
+	//hash := HashStr(fileName)
+	kademlia.files[hash] = path
 
 	if me {
-		for _, myFileName := range kademlia.Datainfo.MyFileNames {
-			if (myFileName == string(fileName)) {
+		for _, myKey := range kademlia.Datainfo.MyKeys {
+			if (myKey == hash) {
 				return
 			}
 		}
-		kademlia.Datainfo.MyFileNames = append(kademlia.Datainfo.MyFileNames, string(fileName))
+		kademlia.Datainfo.MyKeys = append(kademlia.Datainfo.MyKeys, hash)
 		return
 	}
 
 	for _, purgeInfo := range kademlia.Datainfo.PurgeInfos {
-		if (purgeInfo.FileName == string(fileName)) {
+		if (purgeInfo.Key == hash) {
 			kademlia.SetPurgeStamp(&purgeInfo)
 			return
 		}
 	}
 
-	newPurgeInfo := PurgeInformation{FileName: string(fileName), Pinned: false}
+	newPurgeInfo := PurgeInformation{Key: hash, Pinned: false}
 	kademlia.SetPurgeStamp(&newPurgeInfo)
 	kademlia.Datainfo.PurgeInfos = append(kademlia.Datainfo.PurgeInfos, newPurgeInfo)
 
-}*/
+}
 
 func (kademlia *Kademlia) WriteToFile(path string, data []byte) {
 	err := ioutil.WriteFile(path, data, 0644)
