@@ -29,7 +29,7 @@ func (kademlia *Kademlia) FindValue(senderNode *Node, hash *KademliaID) {
   }
   fmt.Println("LOOKING FOR THIS HASH: ", strings.TrimSpace(strings.ToLower(hash.String())))
   if val, ok := kademlia.files[strings.TrimSpace(strings.ToLower(hash.String()))]; ok {
-    kademlia.Network.SendReturnDataMessage(senderNode, val)
+    kademlia.Network.SendReturnDataMessage(senderNode, []byte(val))
     fmt.Printf("Yes, the value is %x \n", val)
   } else {
     nodeList := kademlia.RoutingTable.FindClosestNodes(hash, k)

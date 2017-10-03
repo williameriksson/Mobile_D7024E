@@ -168,7 +168,7 @@ func (kademlia *Kademlia) channelReader() {
 			fmt.Println("Got a value returned to me!")
 			//Some node has returned the value that THIS node requested
 			kademlia.returnedValue = msg.Data
-			kademlia.Store(msg.Data, false)
+			kademlia.Store(string(msg.Data), DOWNLOAD_PATH, false)
 
 		default:
 			fmt.Println("GOT DEFAULT")
@@ -313,6 +313,7 @@ func (kademlia *Kademlia) Store(hash string, path string, me bool) {
 	newPurgeInfo := PurgeInformation{Key: hash, Pinned: false}
 	kademlia.SetPurgeStamp(&newPurgeInfo)
 	kademlia.Datainfo.PurgeInfos = append(kademlia.Datainfo.PurgeInfos, newPurgeInfo)
+	// TODO: Here we should probably call the server to collect the actual file.
 
 }
 
