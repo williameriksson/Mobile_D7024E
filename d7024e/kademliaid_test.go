@@ -57,7 +57,7 @@ func TestNewRandomKademliaID(t *testing.T) {
 	id1 := d7024e.NewRandomKademliaID()
 	id2 := d7024e.NewRandomKademliaID()
 
-	/* Extremely low chance of failing by chance */ 
+	/* Extremely low chance of failing by chance */
 	if id1.Equals(id2) {
 		t.Fail()
 	}

@@ -16,6 +16,7 @@ func TestAddNodeAndLen(t *testing.T) {
 		}
 	}
 }
+
 /*
 func TestGetNodeAndCalcDistance(t *testing.T) {
 	bucket := d7024e.NewBucket()
@@ -29,3 +30,13 @@ func TestGetNodeAndCalcDistance(t *testing.T) {
 
 }
 */
+
+func TestRemoveNode(t *testing.T) {
+	bucket := d7024e.NewBucket()
+	node := d7024e.NewNode(d7024e.NewRandomKademliaID(), "localhost:9000")
+	bucket.AddNode(node)
+	if bucket.Len() != 1 {
+		t.Error("Addnode Malfuction")
+	}
+	bucket.RemoveNode(&node)
+}

@@ -47,7 +47,7 @@ func (kademliaID KademliaID) Equals(otherKademliaID *KademliaID) bool {
 	return true
 }
 
-/* 
+/*
  * Calculates the logical XOR distance between this KademliaID and another KademliaID
  */
 func (kademliaID KademliaID) CalcDistance(target *KademliaID) *KademliaID {

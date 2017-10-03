@@ -26,10 +26,9 @@ import (
 
 	var lastKademlia d7024e.Kademlia
 	var port int = 8001
-	for i := 0; i < 2; i++ {
-		lastKademlia = *d7024e.NewKademlia()
-		go lastKademlia.Run("127.0.0.1:8000", "127.0.0.1:"+strconv.Itoa(port+i))
-		time.Sleep(time.Millisecond * 1000)
+	for i := 0; i < 25; i++ {
+		go d7024e.NewKademlia().Run("127.0.0.1:8000", "127.0.0.1:"+strconv.Itoa(port+i))
+		time.Sleep(time.Millisecond * 500)
 	}
 
 

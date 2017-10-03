@@ -2,7 +2,6 @@ package d7024e
 
 import (
 	"container/list"
-	//"fmt"
 )
 
 type bucket struct {
@@ -33,6 +32,16 @@ func (bucket *bucket) AddNode(node Node) {
 		}
 	} else {
 		bucket.list.MoveToFront(element)
+	}
+}
+
+func (bucket *bucket) RemoveNode(node *Node) {
+	for e := bucket.list.Front(); e != nil; e = e.Next() {
+		nodeID := e.Value.(Node).ID
+
+		if (node).ID.Equals(&nodeID) {
+			bucket.list.Remove(e)
+		}
 	}
 }
 

@@ -1,5 +1,9 @@
 package d7024e
 
+import (
+	"encoding/hex"
+)
+
 //import "fmt"
 
 const bucketSize = 20
@@ -7,6 +11,10 @@ const bucketSize = 20
 type RoutingTable struct {
 	me      Node
 	buckets [IDLength * 8]*bucket
+}
+
+func (routingTable *RoutingTable) GetMyAdress() string {
+	return routingTable.me.Address
 }
 
 func NewRoutingTable(me Node) *RoutingTable {
@@ -20,15 +28,23 @@ func NewRoutingTable(me Node) *RoutingTable {
 
 func (routingTable *RoutingTable) AddNode(node Node) {
 	if !node.ID.Equals(&routingTable.me.ID) {
-		bucketIndex := routingTable.getBucketIndex(&node.ID)
+		bucketIndex := routingTable.GetBucketIndex(&node.ID)
 		bucket := routingTable.buckets[bucketIndex]
 		bucket.AddNode(node)
 	}
 }
 
+func (routingTable *RoutingTable) RemoveNode(node *Node) {
+	if !node.ID.Equals(&routingTable.me.ID) {
+		bucketIndex := routingTable.GetBucketIndex(&node.ID)
+		bucket := routingTable.buckets[bucketIndex]
+		bucket.RemoveNode(node)
+	}
+}
+
 func (routingTable *RoutingTable) FindClosestNodes(target *KademliaID, count int) []Node {
 	var candidates NodeCandidates
-	bucketIndex := routingTable.getBucketIndex(target)
+	bucketIndex := routingTable.GetBucketIndex(target)
 	bucket := routingTable.buckets[bucketIndex]
 
 	candidates.Append(bucket.GetNodeAndCalcDistance(target))
@@ -54,7 +70,7 @@ func (routingTable *RoutingTable) FindClosestNodes(target *KademliaID, count int
 	return candidates.GetNodes(count)
 }
 
-func (routingTable *RoutingTable) getBucketIndex(id *KademliaID) int {
+func (routingTable *RoutingTable) GetBucketIndex(id *KademliaID) int {
 	distance := id.CalcDistance(&routingTable.me.ID)
 	for i := 0; i < IDLength; i++ {
 		for j := 0; j < 8; j++ {
@@ -63,8 +79,33 @@ func (routingTable *RoutingTable) getBucketIndex(id *KademliaID) int {
 			}
 		}
 	}
-
 	return IDLength*8 - 1
+}
+
+func (routingTable *RoutingTable) GetRandomIDInBucket(bucketIndex int) *KademliaID {
+	kek := routingTable.me.ID.String()
+	meData, err := hex.DecodeString(kek)
+	checkError(err)
+	// fmt.Printf("%X\n", meData)
+	mask := meData[(bucketIndex/8)] & (1 << (7 - (uint(bucketIndex) % 8)))
+	// fmt.Printf("%d\n", mask)
+	if mask == 0 {
+		meData[(bucketIndex / 8)] |= (1 << (7 - (uint(bucketIndex) % 8)))
+	} else {
+		meData[(bucketIndex / 8)] &^= (1 << (7 - (uint(bucketIndex) % 8)))
+	}
+	// fmt.Printf("%X\n", meData)
+	str := hex.EncodeToString(meData)
+	kdID := NewKademliaID(str)
+	return kdID
+}
+
+func (routingTable *RoutingTable) GetSize() int {
+	var size int
+	for i := 0; i < (IDLength * 8); i++ {
+		size += routingTable.buckets[i].list.Len()
+	}
+	return size
 }
 
 // Returns a string with all nodeID entries of the routingtable,
