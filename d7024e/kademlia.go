@@ -55,7 +55,8 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 	kademlia.Network.TestChannel <- ("My ID : " + myID.String())
 
 
-
+	go kademlia.RepublishData()
+	go kademlia.PurgeData()
 	conn := kademlia.Network.Listen(myIP)
 	kademlia.Network.Conn = conn
 	go kademlia.Network.HandleConnection()
@@ -116,7 +117,8 @@ func (kademlia *Kademlia) channelReader() {
 
 		case cmd_store:
 			fmt.Println("GOT " + cmd_store)
-			kademlia.Store(msg.Data)
+			// TODO: Add call to own server to establish tcp conn and get the actual file
+			kademlia.Store(msg.Data, false)
 
 		case cmd_find_node:
 			//THIS node has recived a request to find a certain node (from some other node)
@@ -150,10 +152,10 @@ func (kademlia *Kademlia) channelReader() {
 			kademlia.FindValueReturn(&msg.SenderNode, nodeList)
 
 		case cmd_value_returned:
-			fmt.Println("WOW I GOT A VALUE RETURNED TO ME, DAAAMN!!")
+			fmt.Println("Got a value returned to me!")
 			//Some node has returned the value that THIS node requested
 			kademlia.returnedValue = msg.Data
-			kademlia.Store(msg.Data)
+			kademlia.Store(msg.Data, false)
 
 		default:
 			fmt.Println("GOT DEFAULT")
@@ -272,12 +274,34 @@ func (kademlia *Kademlia) PublishData(data []byte) {
 	for i := 0; i < len(closestNodes); i++ {
     kademlia.Network.SendStoreMessage(&closestNodes[i], data)
 	}
-	kademlia.Store(data)
+	kademlia.Store(data, true)
 }
 
-func (kademlia *Kademlia) Store(data []byte) {
-	hash := HashData(data)
-	kademlia.files[hash] = data
+func (kademlia *Kademlia) Store(fileName []byte, me bool) {
+	hash := HashData(fileName)
+	kademlia.files[hash] = fileName
+
+	if me {
+		for _, myFileName := range kademlia.Datainfo.MyFileNames {
+			if (myFileName == string(fileName)) {
+				return
+			}
+		}
+		kademlia.Datainfo.MyFileNames = append(kademlia.Datainfo.MyFileNames, string(fileName))
+		return
+	}
+
+	for _, purgeInfo := range kademlia.Datainfo.PurgeInfos {
+		if (purgeInfo.FileName == string(fileName)) {
+			kademlia.SetPurgeStamp(&purgeInfo)
+			return
+		}
+	}
+
+	newPurgeInfo := PurgeInformation{FileName: string(fileName), Pinned: false}
+	kademlia.SetPurgeStamp(&newPurgeInfo)
+	kademlia.Datainfo.PurgeInfos = append(kademlia.Datainfo.PurgeInfos, newPurgeInfo)
+
 }
 
 func (kademlia *Kademlia) WriteToFile(path string, data []byte) {

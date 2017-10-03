@@ -4,19 +4,27 @@ import (
   "time"
 )
 
+const (
+  REPUBLISHINTERVAL time.Duration = time.Duration(60)*time.Second
+  PURGEINTERVAL time.Duration = time.Duration(10)*time.Second
+)
+
 type PurgeInformation struct {
-  Key             string
+  FileName        string
   Pinned          bool
   PurgeTimeStamp  time.Time
 }
 
 type DataInformation struct {
-  MyKeys       []string
+  MyFileNames  []string
   PurgeInfos   []PurgeInformation
 }
 
 func (kademlia *Kademlia) RepublishData() {
-
+  for _, myFile := range kademlia.Datainfo.MyFileNames {
+    kademlia.PublishData([]byte(myFile))
+  }
+  time.AfterFunc(REPUBLISHINTERVAL, kademlia.RepublishData)
 }
 
 
@@ -27,14 +35,14 @@ func (kademlia *Kademlia) PurgeData() {
   for _, purgeInfo := range kademlia.Datainfo.PurgeInfos {
     if !purgeInfo.Pinned && time.Now().After(purgeInfo.PurgeTimeStamp){
       // TODO: Add functionality to remove the actual file also
-      delete(kademlia.files, purgeInfo.Key)
+      delete(kademlia.files, HashData([]byte(purgeInfo.FileName)))
     }
   }
-  time.AfterFunc(time.Duration(10)*time.Second, kademlia.PurgeData)
+  time.AfterFunc(PURGEINTERVAL, kademlia.PurgeData)
 
 }
 
-func (kademlia *Kademlia) SetPurgeStamp(purgeInfo PurgeInformation) {
+func (kademlia *Kademlia) SetPurgeStamp(purgeInfo *PurgeInformation) {
   duration := time.Duration(60)*time.Second
   purgeInfo.PurgeTimeStamp = time.Now().Add(duration)
 }

@@ -44,7 +44,7 @@ func (kademlia *Kademlia) FindValue(senderNode *Node, hash *KademliaID) {
 func (kademlia *Kademlia) LookupValue(hash *KademliaID, queriedNodes map[string]bool, prevBestNodes NodeCandidates, recCount int) {
 	kademlia.LookupValueCount = 0
 	kademlia.returnedValueNodes = prevBestNodes
-  fmt.Println("THE FUCKING VALUE IS: ", kademlia.returnedValue)
+  fmt.Println("THE VALUE IS: ", kademlia.returnedValue)
 
 	closestNodes := kademlia.RoutingTable.FindClosestNodes(hash, k)
 	//fmt.Println("closest len " + strconv.Itoa(len(closestNodes)))
@@ -80,7 +80,7 @@ func (kademlia *Kademlia) LookupValue(hash *KademliaID, queriedNodes map[string]
       if (len(kademlia.returnedValueNodes.nodes) > 0) {
         kademlia.Network.SendStoreMessage(&kademlia.returnedValueNodes.nodes[0], kademlia.returnedValue)
       }
-      
+
       fmt.Println("Value found, let's do something with it.", kademlia.returnedValue)
 
       kademlia.returnedValue = nil
