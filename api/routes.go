@@ -11,7 +11,7 @@ type Route struct {
 
 type Routes []Route
 
-var routes = Routes{
+var privateRoutes = Routes{
 	Route{
 		"Index",
 		"GET",
@@ -47,5 +47,14 @@ var routes = Routes{
 		"GET",
 		"/addnode/{addr}",
 		AddNode,
+	},
+}
+
+var publicRoutes = Routes{
+	Route{
+		"Download",
+		"GET",
+		"/download/{hash}",
+		Download,
 	},
 }

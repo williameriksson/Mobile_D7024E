@@ -29,7 +29,7 @@ func Store(w http.ResponseWriter, r *http.Request) {
 	path := r.FormValue("path")
 	filename := filepath.Base(path)
 	hash := HashStr(filename)
-	kademlia.Store(hash, path)
+	//kademlia.PublishData(hash, path)
 	fmt.Fprint(w, hash)
 }	
 
@@ -37,6 +37,7 @@ func Pin(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Pin endpoint")
 	vars := mux.Vars(r)
 	fmt.Fprintln(w, vars["hash"])
+	fmt.Fprintln(w, r.RemoteAddr)
 }
 
 func Unpin(w http.ResponseWriter, r *http.Request) {
@@ -52,4 +53,9 @@ func AddNode(w http.ResponseWriter, r *http.Request) {
 
 	kademlia := d7024e.NewKademlia()
 	go kademlia.Run(bootstrap, addr)
+}
+
+func Download(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "Download Endpoint")
+	fmt.Fprintln(w, r.RemoteAddr)
 }

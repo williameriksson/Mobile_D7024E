@@ -7,20 +7,22 @@ import (
     "Mobile_D7024E/d7024e"
 )
 
-const port string = ":8080"
+const privateAddr string = "127.0.0.1:8080"
+const publicAddr string = ":8081"
 var kademlia *d7024e.Kademlia
 
 func StartServer(kad *d7024e.Kademlia) {
     kademlia = kad
-    router := mux.NewRouter().StrictSlash(true)
+    privateRouter := mux.NewRouter().StrictSlash(true)
+    publicRouter := mux.NewRouter().StrictSlash(true)
 
-    for _, route := range routes {
+    for _, route := range privateRoutes {
         var handler http.Handler
 
         handler = route.HandlerFunc
         handler = Logger(handler, route.Name)
 
-        router.
+        privateRouter.
             Methods(route.Method).
             Path(route.Pattern).
             Name(route.Name).
@@ -28,36 +30,21 @@ func StartServer(kad *d7024e.Kademlia) {
 
     }
 
-    log.Fatal(http.ListenAndServe(port, router))
-}
-
-// Returns a server object so it can be shut down
-func StartAndReturnServer() *http.Server {
-    router := mux.NewRouter().StrictSlash(true)
-
-    srv := &http.Server{Addr: port, Handler: router}
-
-    for _, route := range routes {
+    for _, route := range publicRoutes {
         var handler http.Handler
 
         handler = route.HandlerFunc
         handler = Logger(handler, route.Name)
 
-        router.
+        publicRouter.
             Methods(route.Method).
             Path(route.Pattern).
             Name(route.Name).
             Handler(handler)
-
     }
 
-    go func() {
-        if err := srv.ListenAndServe(); err != nil {
-            // cannot panic, because this probably is an intentional close
-            log.Printf("Httpserver: ListenAndServe() error: %s", err)
-        }
+    go func(){
+        log.Fatal(http.ListenAndServe(privateAddr, privateRouter))
     }()
-
-    // returning reference so caller can call Shutdown()
-    return srv
+    log.Fatal(http.ListenAndServe(publicAddr, publicRouter))
 }

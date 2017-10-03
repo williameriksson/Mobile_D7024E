@@ -68,7 +68,7 @@ func main() {
 	 */ 
 	case "populate":
 		var port int = 8100
-		get(addr+"/addnode/127.0.0.1:"+strconv.Itoa(port))
+		//get(addr+"/addnode/127.0.0.1:"+strconv.Itoa(port))
 
 		nr, _ := strconv.Atoi(cmds[2])
 		for i := 1; i < nr; i++ {
@@ -84,6 +84,7 @@ func post(url string, data url.Values) {
 	resp, err := http.PostForm(url, data)
 
 	text, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
 	if err != nil {
     	log.Fatal(err)
 	}
@@ -97,6 +98,7 @@ func get(url string) {
 	}
 
 	text, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
 	if err != nil {
     	log.Fatal(err)
 	}
