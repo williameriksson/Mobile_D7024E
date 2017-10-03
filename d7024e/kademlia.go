@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"strconv"
 	"time"
 )
 
@@ -48,12 +47,13 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 	kademlia.RoutingTable = NewRoutingTable(myNode)
 
 	kademlia.Network = Network{me: &kademlia.RoutingTable.me, MsgChannel: make(chan Message), TestChannel: make(chan string, 100)}
-	kademlia.Network.TestChannel <- ("My ID : " + myID.String())
+	// kademlia.Network.TestChannel <- ("My ID : " + myID.String())
 
 	conn := kademlia.Network.Listen(myIP)
 	kademlia.Network.Conn = conn
 	go kademlia.Network.HandleConnection()
 
+	/*	--- Bootstrap Procedure ---	*/
 	if bootStrapIP != "" {
 		// fmt.Println("GOT bootstrap ID")
 		bootStrapNode := NewNode(bootStrapID, bootStrapIP)
@@ -71,8 +71,18 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 				queriedNodes := make(map[string]bool)
 				nodeCandidates := NodeCandidates{}
 				kademlia.LookupNode(&kademlia.RoutingTable.me.ID, queriedNodes, nodeCandidates, 0)
-				// kademlia.Network.SendFindNodeMessage(&bootStrapNode, kademlia.RoutingTable.me.ID) // QUESTION: Why was this commented out?
-				break
+
+				secondConfirm := <-kademlia.Network.MsgChannel
+				if secondConfirm.Command == cmd_find_node_returned {
+					var nodeList []Node
+					err := json.Unmarshal(secondConfirm.Data, &nodeList)
+					checkError(err)
+					kademlia.findNodeReturn(&secondConfirm.SenderNode, nodeList)
+					kademlia.RefreshBuckets()
+					kademlia.PingAllNodes()
+					break
+				}
+
 			} else {
 				fmt.Println("Expected PING_ACK, instead got: ", confirmation.Command, "will keep waiting for PING_ACK")
 			}
@@ -98,13 +108,12 @@ func (kademlia *Kademlia) channelReader() {
 	for {
 		//halts here waiting for a command.
 		msg := <-kademlia.Network.MsgChannel
-		kademlia.RoutingTable.AddNode(msg.SenderNode) // QUESTION: Added this line, should this be here?
+		kademlia.RoutingTable.AddNode(msg.SenderNode)
 		switch msg.Command {
 		case cmd_ping_ack:
 			kademlia.Network.TestChannel <- kademlia.RoutingTable.me.Address + (" GOT PING_ACK")
 
 		case cmd_ping:
-			kademlia.Network.TestChannel <- kademlia.RoutingTable.me.Address + (" GOT PING")
 			kademlia.Network.SendPingAck(&msg.SenderNode)
 
 		case cmd_store:
@@ -137,26 +146,12 @@ func (kademlia *Kademlia) channelReader() {
 }
 
 func (kademlia *Kademlia) findNode(senderNode *Node, kID *KademliaID) {
-	kademlia.RoutingTable.AddNode(*senderNode)
 	nodeList := kademlia.RoutingTable.FindClosestNodes(kID, k)
-	fmt.Println("nodelist --")
-	for i := 0; i < len(nodeList); i++ {
-		fmt.Printf("node : 0x%X\n", nodeList[i].ID)
-	}
-	kademlia.Network.SendReturnFindNodeMessage(senderNode, nodeList)
-
-	// kademlia.Network.TestChannel <- ("sending back : " + strconv.Itoa(len(nodeList)))
-	// temp := kademlia.RoutingTable.me.Address + "\n"
-	// for j := 1; j <= len(kademlia.RoutingTable.buckets); j++ {
-	// 	if kademlia.RoutingTable.buckets[j-1].Len() > 0 {
-	// 		temp += strconv.Itoa(kademlia.RoutingTable.buckets[j-1].Len())
-	// 	}
-	// 	temp += " "
-	// 	if j%20 == 0 {
-	// 		temp += "\n"
-	// 	}
+	// fmt.Println("nodelist --")
+	// for i := 0; i < len(nodeList); i++ {
+	// 	fmt.Printf("node : 0x%X\n", nodeList[i].ID)
 	// }
-	// kademlia.Network.TestChannel <- temp
+	kademlia.Network.SendReturnFindNodeMessage(senderNode, nodeList)
 }
 
 func (kademlia *Kademlia) findNodeReturn(senderNode *Node, nodeList []Node) {
@@ -165,21 +160,9 @@ func (kademlia *Kademlia) findNodeReturn(senderNode *Node, nodeList []Node) {
 
 	//adds all the returned nodes to the RoutingTable
 	for i := 0; i < len(nodeList); i++ {
+		// kademlia.Network.SendPingMessage(&nodeList[i])
 		kademlia.RoutingTable.AddNode(nodeList[i])
 	}
-	kademlia.Network.TestChannel <- ("recieved nodes : " + strconv.Itoa(len(nodeList)))
-
-	temp := kademlia.RoutingTable.me.Address + "\n"
-	for j := 1; j <= len(kademlia.RoutingTable.buckets); j++ {
-		if kademlia.RoutingTable.buckets[j-1].Len() > 0 {
-			temp += strconv.Itoa(kademlia.RoutingTable.buckets[j-1].Len())
-		}
-		temp += " "
-		if j%20 == 0 {
-			temp += "\n"
-		}
-	}
-	kademlia.Network.TestChannel <- temp
 }
 
 func (kademlia *Kademlia) LookupNode(target *KademliaID, queriedNodes map[string]bool, prevBestNodes NodeCandidates, recCount int) {
@@ -189,7 +172,6 @@ func (kademlia *Kademlia) LookupNode(target *KademliaID, queriedNodes map[string
 
 	fmt.Println("LookupNode running")
 	closestNodes := kademlia.RoutingTable.FindClosestNodes(target, k)
-	fmt.Println("closest len " + strconv.Itoa(len(closestNodes)))
 	for i := 0; i < alpha && i < len(closestNodes); i++ {
 		if queriedNodes[target.String()] == false {
 			queriedNodes[target.String()] = true
@@ -219,6 +201,33 @@ func (kademlia *Kademlia) LookupNode(target *KademliaID, queriedNodes map[string
 			//did NOT find node, continue search
 			kademlia.LookupNode(target, queriedNodes, bestNodes, (recCount + 1))
 		}
+	}
+}
+
+func (kademlia *Kademlia) RefreshBuckets() {
+	myIndex := kademlia.RoutingTable.GetBucketIndex(&kademlia.RoutingTable.me.ID)
+	//for the buckets less than "me"
+	for i := myIndex; i >= 0; i-- {
+		if kademlia.RoutingTable.buckets[i].Len() < 1 {
+			kadID := kademlia.RoutingTable.GetRandomIDInBucket(i)
+			receiverNode := kademlia.RoutingTable.FindClosestNodes(kadID, 1)
+			kademlia.Network.SendFindNodeMessage(&receiverNode[0], kadID)
+		}
+	}
+	//for the buckets more than "me"
+	for j := myIndex; j < (IDLength * 8); j++ {
+		if kademlia.RoutingTable.buckets[j].Len() < 1 {
+			kadID := kademlia.RoutingTable.GetRandomIDInBucket(j)
+			receiverNode := kademlia.RoutingTable.FindClosestNodes(kadID, 1)
+			kademlia.Network.SendFindNodeMessage(&receiverNode[0], kadID)
+		}
+	}
+}
+
+func (kademlia *Kademlia) PingAllNodes() {
+	nodes := kademlia.RoutingTable.FindClosestNodes(&kademlia.RoutingTable.me.ID, k)
+	for i := 0; i < len(nodes); i++ {
+		kademlia.Network.SendPingMessage(&nodes[i])
 	}
 }
 

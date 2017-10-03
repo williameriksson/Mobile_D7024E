@@ -8,8 +8,8 @@ import (
 
 func TestRoutingTable(t *testing.T) {
 	testNodes := 5
-
-	rt := d7024e.NewRoutingTable(d7024e.NewNode(d7024e.NewKademliaID("FFFFFFFF00000000000000000000000000000000"), "localhost:8000"))
+	myID := d7024e.NewKademliaID("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+	rt := d7024e.NewRoutingTable(d7024e.NewNode(myID, "localhost:8000"))
 
 	for i := 1; i <= testNodes; i++ {
 		address := "localhost:800" + strconv.Itoa(i+1)
@@ -29,5 +29,13 @@ func TestRoutingTable(t *testing.T) {
 	fakeNodes := rt.FindClosestNodes(d7024e.NewKademliaID(fakeID), 20)
 	if fakeNodes[0].ID.String() == fakeID {
 		t.Error()
+	}
+
+	for index := 0; index < 160; index++ {
+		id := rt.GetRandomIDInBucket(index)
+		newIndex := rt.GetBucketIndex(id)
+		if index != newIndex {
+			t.Error(strconv.Itoa(index) + " != " + strconv.Itoa(newIndex))
+		}
 	}
 }

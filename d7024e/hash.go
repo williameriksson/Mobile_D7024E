@@ -2,10 +2,10 @@ package d7024e
 
 import (
 	"crypto/sha1"
+	"encoding/hex"
 	"io"
 	"log"
 	"os"
-	"encoding/hex"
 )
 
 func HashData(data []byte) string {
@@ -35,5 +35,3 @@ func HashStr(text string) []byte {
 	io.WriteString(h, text)
 	return h.Sum(nil)
 }
-
-

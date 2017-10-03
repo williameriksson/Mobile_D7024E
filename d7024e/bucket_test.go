@@ -16,6 +16,7 @@ func TestAddNodeAndLen(t *testing.T) {
 		}
 	}
 }
+
 /*
 func TestGetNodeAndCalcDistance(t *testing.T) {
 	bucket := d7024e.NewBucket()
