@@ -7,6 +7,7 @@ import (
 	//"io/ioutil"
 	"net/http"
 	//"strconv"
+	"path/filepath"
 
 	"github.com/gorilla/mux"
 	"Mobile_D7024E/d7024e"
@@ -17,14 +18,20 @@ func Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func Cat(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Cat endpoint")
 	vars := mux.Vars(r)
-	fmt.Fprintln(w, vars["hash"])
+	filename := vars["filename"]
+	hash := HashStr(filename)
+	path := kademlia.Get(hash)
+	fmt.Fprintln(w, path)
 }
 
 func Store(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Store endpoint")
-}
+	path := r.FormValue("path")
+	filename := filepath.Base(path)
+	hash := HashStr(filename)
+	kademlia.Store(hash, path)
+	fmt.Fprint(w, hash)
+}	
 
 func Pin(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Pin endpoint")

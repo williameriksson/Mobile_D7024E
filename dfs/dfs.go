@@ -5,12 +5,14 @@ import (
 	"os"
 	"log"
 	"net/http"
+	"net/url"
 	"io/ioutil"
 	"strconv"
 	"time"
+	"path/filepath"
 )
 
-// Compile command (For Windows): GOOS=windows GOARCH=amd64 go build -o dfs.exe dfs.go
+// Compile command: go build -o dfs.exe dfs.go
 
 const addr string = "http://127.0.0.1:8080"
 
@@ -22,7 +24,26 @@ func main() {
 
 	switch cmds[1] {
 	case "store":
-		fmt.Println("Store")
+		path, err := filepath.Abs(cmds[2])
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		// Check if file exists
+		if file, err := os.Stat(path); os.IsNotExist(err) {
+			log.Fatal("File doesn't exist.")
+		} else if file.Mode().IsDir(){
+			// If "file" is a directory it throws fatal error
+			log.Fatal("Not a file.")
+		}
+		
+		val, err := url.ParseQuery("path="+path)
+		if err != nil {
+			fmt.Println(err)
+		}
+		post(addr+"/store", val)
+		
+		//fmt.Println(path)
 	case "cat":
 		get(addr+"/cat/"+cmds[2])
 	case "pin":
@@ -57,6 +78,16 @@ func main() {
 	default:
 		log.Fatal("Unknown argument ", cmds[1])
 	}
+}
+
+func post(url string, data url.Values) {
+	resp, err := http.PostForm(url, data)
+
+	text, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+    	log.Fatal(err)
+	}
+    fmt.Println(string(text))
 }
 
 func get(url string) {

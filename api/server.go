@@ -4,11 +4,14 @@ import (
     "net/http"
     "log"
     "github.com/gorilla/mux"
+    "Mobile_D7024E/d7024e"
 )
 
 const port string = ":8080"
+var kademlia *d7024e.Kademlia
 
-func StartServer() {
+func StartServer(kad *d7024e.Kademlia) {
+    kademlia = kad
     router := mux.NewRouter().StrictSlash(true)
 
     for _, route := range routes {
