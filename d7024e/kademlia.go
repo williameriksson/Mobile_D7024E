@@ -17,7 +17,11 @@ type Kademlia struct {
 	files         map[string]string // Hash table mapping sha-1 hash (base64 encoded) to some data
 	RoutingTable  *RoutingTable
 	LookupCount   int
+	LookupValueCount int
 	returnedNodes NodeCandidates
+	returnedValueNodes NodeCandidates
+	returnedValue []byte
+	Datainfo	DataInformation
 }
 
 // Constructor
@@ -41,7 +45,7 @@ func (kademlia *Kademlia) Run(connectIP string, myIP string) {
 func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 
 	myID := NewRandomKademliaID() //temp ID
-	fmt.Printf("ID: 0x%X\n", myID)
+	//fmt.Printf("ID: 0x%X\n", myID)
 	bootStrapID := NewRandomKademliaID() //20 byte id temp ID TODO: bootstrap should NOT be assigned a random ID.
 
 	myNode := NewNode(myID, myIP)
@@ -50,6 +54,9 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 	kademlia.Network = Network{me: &kademlia.RoutingTable.me, MsgChannel: make(chan Message), TestChannel: make(chan string, 100)}
 	kademlia.Network.TestChannel <- ("My ID : " + myID.String())
 
+
+	go kademlia.RepublishData()
+	go kademlia.PurgeData()
 	conn := kademlia.Network.Listen(myIP)
 	kademlia.Network.Conn = conn
 	go kademlia.Network.HandleConnection()
@@ -93,6 +100,7 @@ const cmd_find_value = "FIND_VALUE"
 const cmd_ping_ack = "PING_ACK"
 const cmd_find_node_returned = "FIND_NODE_RETURNED"
 const cmd_find_value_returned = "FIND_VALUE_RETURNED"
+const cmd_value_returned = "VALUE_RETURNED"
 
 func (kademlia *Kademlia) channelReader() {
 	for {
@@ -109,13 +117,16 @@ func (kademlia *Kademlia) channelReader() {
 
 		case cmd_store:
 			fmt.Println("GOT " + cmd_store)
-			//kademlia.Store(msg.Data)
+			// TODO: Add call to own server to establish tcp conn and get the actual file
+			kademlia.Store(msg.Data, false)
 
 		case cmd_find_node:
 			//THIS node has recived a request to find a certain node (from some other node)
 			// kademlia.Network.TestChannel <- kademlia.RoutingTable.me.Address + (" GOT FIND_NODE")
-			kID := NewKademliaID(string(msg.Data))
-			kademlia.findNode(&msg.SenderNode, kID)
+			var kID KademliaID
+			err := json.Unmarshal(msg.Data, &kID)
+			checkError(err)
+			kademlia.findNode(&msg.SenderNode, &kID)
 
 		case cmd_find_node_returned:
 			//Some node has returned a list of the k closest nodes to the node that THIS node requested
@@ -126,23 +137,48 @@ func (kademlia *Kademlia) channelReader() {
 			kademlia.findNodeReturn(&msg.SenderNode, nodeList)
 
 		case cmd_find_value:
+			//THIS node has recived a request to find a certain value (from some other node)
 			fmt.Println("FIND_VALUE")
-			kademlia.LookupValue(msg.Hash)
+			var kID KademliaID
+			err := json.Unmarshal(msg.Data, &kID)
+			checkError(err)
+			kademlia.FindValue(&msg.SenderNode, &kID)
+
+		case cmd_find_value_returned:
+			//Some node has returned a list of the k closest nodes to the value that THIS node requested
+			var nodeList []Node
+			err := json.Unmarshal(msg.Data, &nodeList)
+			checkError(err)
+			kademlia.FindValueReturn(&msg.SenderNode, nodeList)
+
+		case cmd_value_returned:
+			fmt.Println("Got a value returned to me!")
+			//Some node has returned the value that THIS node requested
+			kademlia.returnedValue = msg.Data
+			kademlia.Store(msg.Data, false)
 
 		default:
 			fmt.Println("GOT DEFAULT")
 		}
-		kademlia.WriteToFile(kademlia.RoutingTable.me.ID.String()+".txt", []byte(kademlia.RoutingTable.GetRoutingTable()))
+		tmpString := ""
+
+		for key, value := range kademlia.files {
+	    tmpString += "Key: " + key + "Value: " + string(value)
+	  }
+
+
+		kademlia.WriteToFile(kademlia.RoutingTable.me.ID.String()+".txt", []byte(tmpString))
+		//kademlia.WriteToFile(kademlia.RoutingTable.me.ID.String()+".txt", []byte(kademlia.RoutingTable.GetRoutingTable()))
 	}
 }
 
 func (kademlia *Kademlia) findNode(senderNode *Node, kID *KademliaID) {
 	kademlia.RoutingTable.AddNode(*senderNode)
 	nodeList := kademlia.RoutingTable.FindClosestNodes(kID, k)
-	fmt.Println("nodelist --")
-	for i := 0; i < len(nodeList); i++ {
-		fmt.Printf("node : 0x%X\n", nodeList[i].ID)
-	}
+	//fmt.Println("nodelist --")
+	// for i := 0; i < len(nodeList); i++ {
+	// 	fmt.Printf("node : 0x%X\n", nodeList[i].ID)
+	// }
 	kademlia.Network.SendReturnFindNodeMessage(senderNode, nodeList)
 
 	// kademlia.Network.TestChannel <- ("sending back : " + strconv.Itoa(len(nodeList)))
@@ -208,6 +244,7 @@ func (kademlia *Kademlia) LookupNode(target *KademliaID, queriedNodes map[string
 	}
 
 	if !timeout {
+		fmt.Println("RETURNEDNODES: ", kademlia.returnedValueNodes)
 		kademlia.returnedNodes.Sort() //what does this do
 		bestNodes := NodeCandidates{nodes: kademlia.returnedNodes.GetNodes(k)}
 		if bestNodes.nodes[0].ID.String() == target.String() {
@@ -231,22 +268,13 @@ func (kademlia *Kademlia) LookupNode2(target *KademliaID) {
 
 }*/
 
-func (kademlia *Kademlia) LookupValue(hash string) {
-	// If the node has the value, return it
-	if val, ok := kademlia.files[hash]; ok {
-		/*
-		 * DATA (val) SHOULD BE RETURNED HERE
-		 */
-		fmt.Printf("Yes, the value is %x \n", val)
-	} else {
-		/*
-		 * TRIPLE (IP Adress, UDP Port, Node ID) SHOULD BE RETURNED HERE
-		 */
-		id := NewKademliaID(hash)
-		//kademlia.LookupNode
-		fmt.Println("No value, %x", id)
+func (kademlia *Kademlia) PublishData(data []byte) {
+	hash := HashData(data)
+	closestNodes := kademlia.RoutingTable.FindClosestNodes(NewKademliaID(hash), k)
+	for i := 0; i < len(closestNodes); i++ {
+    kademlia.Network.SendStoreMessage(&closestNodes[i], data)
 	}
-
+	kademlia.Store(data, true)
 }
 
 func (kademlia *Kademlia) Get(hash string) string{
@@ -257,9 +285,31 @@ func (kademlia *Kademlia) Store(hash string, path string){
 	kademlia.files[hash] = path
 }
 /*
-func (kademlia *Kademlia) Store(data []byte) {
-	hash := HashData(data)
-	kademlia.files[hash] = data
+func (kademlia *Kademlia) Store(fileName []byte, me bool) {
+	hash := HashData(fileName)
+	kademlia.files[hash] = fileName
+
+	if me {
+		for _, myFileName := range kademlia.Datainfo.MyFileNames {
+			if (myFileName == string(fileName)) {
+				return
+			}
+		}
+		kademlia.Datainfo.MyFileNames = append(kademlia.Datainfo.MyFileNames, string(fileName))
+		return
+	}
+
+	for _, purgeInfo := range kademlia.Datainfo.PurgeInfos {
+		if (purgeInfo.FileName == string(fileName)) {
+			kademlia.SetPurgeStamp(&purgeInfo)
+			return
+		}
+	}
+
+	newPurgeInfo := PurgeInformation{FileName: string(fileName), Pinned: false}
+	kademlia.SetPurgeStamp(&newPurgeInfo)
+	kademlia.Datainfo.PurgeInfos = append(kademlia.Datainfo.PurgeInfos, newPurgeInfo)
+
 }*/
 
 func (kademlia *Kademlia) WriteToFile(path string, data []byte) {
