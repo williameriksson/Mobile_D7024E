@@ -11,11 +11,13 @@ import (
 	"strconv"
 	"time"
 	"path/filepath"
+	"mime"
 )
 
 // Compile command: go build -o dfs.exe dfs.go
 
 const addr string = "http://127.0.0.1:8080"
+const dir string = "C:/Users/David/go/src/Mobile_D7024E/files/"
 
 func main() {
 	cmds := os.Args
@@ -77,12 +79,19 @@ func main() {
 			time.Sleep(time.Millisecond * 1000)
 		}
 	case "download":
-		fp := "C:/Users/David/go/src/Mobile_D7024E/dfs/myfile2.txt"
-		resp, err := http.Get(addr+"/download/a")
+		resp, err := http.Get(addr+"/download/"+cmds[2])
 		if err != nil {
 			log.Fatal(err)
 		}
-		out, err := os.Create(fp)
+
+		content := resp.Header.Get("Content-Disposition")
+		_, params, err := mime.ParseMediaType(content)
+		if err != nil {
+			log.Fatal(err)
+		}
+		filename := params["filename"]
+		
+		out, err := os.Create(dir + filename)
 		if err != nil  {
 			log.Fatal(err)
 		}
@@ -93,7 +102,7 @@ func main() {
 		if err != nil {
 	    	log.Fatal(err)
 		}
-	    fmt.Println("downloaded to "+fp)
+	    fmt.Println("Downloaded to "+dir+filename)
 	default:
 		log.Fatal("Unknown argument ", cmds[1])
 	}

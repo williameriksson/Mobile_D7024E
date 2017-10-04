@@ -253,7 +253,7 @@ func (kademlia *Kademlia) Get(hash string) string{
 	return kademlia.files[hash]
 }
 
-func (kademlia *Kademlia) Store(hash string, path string){
+func (kademlia *Kademlia) Set(hash string, path string){
 	kademlia.files[hash] = path
 }
 /*

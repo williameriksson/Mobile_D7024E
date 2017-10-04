@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"io"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"Mobile_D7024E/d7024e"
@@ -38,7 +39,9 @@ func Store(w http.ResponseWriter, r *http.Request) {
 	if isLocalHost(r){
 		path := r.FormValue("path")
 		filename := filepath.Base(path)
+		filename = strings.ToLower(filename)
 		hash := HashStr(filename)
+		kademlia.Set(hash, path)
 		//kademlia.PublishData(hash, path)
 		fmt.Fprint(w, hash)
 	} else{
@@ -80,10 +83,14 @@ func AddNode(w http.ResponseWriter, r *http.Request) {
 }
 
 func Download(w http.ResponseWriter, r *http.Request) {
-	fp := "C:/Users/David/go/src/Mobile_D7024E/dfs/myfile.txt"
-	w.Header().Set("Content-Disposition", "attachment; filename=myfiledownloaded.txt")
+	vars := mux.Vars(r)
+	hash := vars["hash"]
+
+	fp := kademlia.Get(hash)
+	log.Println(fp)
+	filename := filepath.Base(fp)
+	w.Header().Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
 	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
-	fmt.Fprintln(w, "Download Endpoint")
 	// Create the file
 	out, err := os.Open(fp)
 	if err != nil  {
