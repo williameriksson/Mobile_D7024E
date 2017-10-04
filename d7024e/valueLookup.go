@@ -14,6 +14,10 @@ func (kademlia *Kademlia) FindValueReturn(senderNode *Node, nodeList []Node) {
 	for i := 0; i < len(nodeList); i++ {
 		kademlia.RoutingTable.AddNode(nodeList[i])
 	}
+  select {
+	case kademlia.valueTimeoutChan <- true:
+	default:
+	}
 }
 
 func (kademlia *Kademlia) PrintHashTable() {
@@ -23,13 +27,13 @@ func (kademlia *Kademlia) PrintHashTable() {
 }
 
 func (kademlia *Kademlia) FindValue(senderNode *Node, hash *KademliaID) {
-  // If THIS node has the value, return it
+  // If THIS node has the value, echo the hash back to the requester
   for key, value := range kademlia.files {
     fmt.Println("Key:", key, "Value:", value)
   }
   fmt.Println("LOOKING FOR THIS HASH: ", strings.TrimSpace(strings.ToLower(hash.String())))
   if val, ok := kademlia.files[strings.TrimSpace(strings.ToLower(hash.String()))]; ok {
-    kademlia.Network.SendReturnDataMessage(senderNode, []byte(val))
+    kademlia.Network.SendReturnDataMessage(senderNode, []byte(hash.String()))
     fmt.Printf("Yes, the value is %x \n", val)
   } else {
     nodeList := kademlia.RoutingTable.FindClosestNodes(hash, k)
@@ -44,7 +48,6 @@ func (kademlia *Kademlia) FindValue(senderNode *Node, hash *KademliaID) {
 func (kademlia *Kademlia) LookupValue(hash *KademliaID, queriedNodes map[string]bool, prevBestNodes NodeCandidates, recCount int) {
 	kademlia.LookupValueCount = 0
 	kademlia.returnedValueNodes = prevBestNodes
-  fmt.Println("THE VALUE IS: ", kademlia.returnedValue)
 
 	closestNodes := kademlia.RoutingTable.FindClosestNodes(hash, k)
 	//fmt.Println("closest len " + strconv.Itoa(len(closestNodes)))
@@ -56,14 +59,12 @@ func (kademlia *Kademlia) LookupValue(hash *KademliaID, queriedNodes map[string]
 		}
 	}
 
-	timeout := false
-	timeStamp := time.Now()
-
-	for (kademlia.LookupValueCount < 1) && !timeout {
-		//busy waiting for at least one RETURN_FIND_NODE
-		if time.Now().Sub(timeStamp) > timeOutTime {
-			timeout = true
-		}
+  timeout := false
+	select {
+	case <-kademlia.valueTimeoutChan:
+		timeout = false
+	case <-time.After(time.Second * 1):
+		timeout = true
 	}
 
   for i := 0; i < len(kademlia.returnedValueNodes.nodes); i++ {
@@ -71,40 +72,31 @@ func (kademlia *Kademlia) LookupValue(hash *KademliaID, queriedNodes map[string]
   }
   kademlia.returnedValueNodes.Sort()
 
-	if !timeout || timeout {
-    if len(kademlia.returnedValue) != 0 {
+	if !timeout {
+    if kademlia.foundHashes[hash.String()] == true  {
       // We got the value, now we cache it in the closest node to the target that didn't have it
       // How do we make sure this isn't the node that we got it from? Maybe we have to save
       // the id of the node that sent the data and remove it from consideration. For now we just take
       // the node with the closest ID to the key
       if (len(kademlia.returnedValueNodes.nodes) > 0) {
-        kademlia.Network.SendStoreMessage(&kademlia.returnedValueNodes.nodes[0], kademlia.returnedValue)
+        kademlia.Network.SendStoreMessage(&kademlia.returnedValueNodes.nodes[0], []byte(hash.String()))
       }
-
-      fmt.Println("Value found, let's do something with it.", kademlia.returnedValue)
-
-      kademlia.returnedValue = nil
+      delete(kademlia.foundHashes, hash.String())
       return
     }
-    //fmt.Println("RETURNEDVALUENODES: ", kademlia.returnedValueNodes)
 
+  }
+  var length int
+  if length = k; kademlia.returnedValueNodes.Len() < k {
+    length = kademlia.returnedValueNodes.Len()
+  }
 
-    var length int
-    if length = k; kademlia.returnedValueNodes.Len() < k {
-      length = kademlia.returnedValueNodes.Len()
-    }
-
-
-		bestNodes := NodeCandidates{nodes: kademlia.returnedValueNodes.GetNodes(length)}
-		if recCount == k {
-			//did NOT find the data after k attempts
-		} else {
-			//did NOT find data, continue search
-			kademlia.LookupValue(hash, queriedNodes, bestNodes, (recCount + 1))
-		}
+	bestNodes := NodeCandidates{nodes: kademlia.returnedValueNodes.GetNodes(length)}
+	if recCount == k {
+		//did NOT find the data after k attempts
+	} else {
+		//did NOT find data, continue search
+		kademlia.LookupValue(hash, queriedNodes, bestNodes, (recCount + 1))
 	}
-
-
-
 
 }

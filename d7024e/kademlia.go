@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	//"strconv"
 	"time"
+	"Mobile_D7024E/common"
 )
 
 const alpha int = 3
@@ -20,10 +21,12 @@ type Kademlia struct {
 	LookupValueCount   int
 	returnedNodes      NodeCandidates
 	returnedValueNodes NodeCandidates
-	returnedValue      []byte
+	foundHashes	       map[string]bool
 	Datainfo           DataInformation
 	pingedNodes        map[Node]bool
 	timeoutChannel     chan bool
+	valueTimeoutChan	 chan bool
+	serverChannel			 chan common.Handle
 }
 
 // Constructor
@@ -32,6 +35,8 @@ func NewKademlia() *Kademlia {
 	kademlia.files = make(map[string]string)
 	kademlia.pingedNodes = make(map[Node]bool)
 	kademlia.timeoutChannel = make(chan bool)
+	kademlia.valueTimeoutChan = make(chan bool)
+	kademlia.serverChannel = make(chan common.Handle)
 	return &kademlia
 }
 
@@ -115,7 +120,7 @@ const cmd_find_node_returned = "FIND_NODE_RETURNED"
 const cmd_find_value_returned = "FIND_VALUE_RETURNED"
 const cmd_value_returned = "VALUE_RETURNED"
 
-// TODO: FIX THE PATH OS INDEPENDETN
+// TODO: FIX THE PATH OS INDEPENDENT
 const DOWNLOAD_PATH = "./Downloads"
 
 func (kademlia *Kademlia) channelReader() {
@@ -133,7 +138,14 @@ func (kademlia *Kademlia) channelReader() {
 		case cmd_store:
 			fmt.Println("GOT " + cmd_store)
 			// TODO: Add call to own server to establish tcp conn and get the actual file
-			kademlia.Store(string(msg.Data), DOWNLOAD_PATH, false)
+			select {
+			case kademlia.serverChannel <- common.NewHandle(common.CMD_RETRIEVE_FILE, string(msg.Data), msg.SenderNode.Address):
+				fmt.Println("Sent message to server to get a file")
+			default:
+				fmt.Println("Could not deliver retrieve message to server, not listening")
+			}
+			//QUESTION: Should server handle the below store or kademlia?
+			//kademlia.Store(string(msg.Data), DOWNLOAD_PATH, false)
 
 		case cmd_find_node:
 			//THIS node has recived a request to find a certain node (from some other node)
@@ -167,10 +179,18 @@ func (kademlia *Kademlia) channelReader() {
 			kademlia.FindValueReturn(&msg.SenderNode, nodeList)
 
 		case cmd_value_returned:
-			fmt.Println("Got a value returned to me!")
+			fmt.Println("Found a node that holds the file!")
 			//Some node has returned the value that THIS node requested
-			kademlia.returnedValue = msg.Data
-			kademlia.Store(string(msg.Data), DOWNLOAD_PATH, false)
+			select {
+			case kademlia.serverChannel <- common.NewHandle(common.CMD_FOUND_FILE, string(msg.Data), msg.SenderNode.ID.String()):
+				fmt.Println("Msg delivered to server")
+			default:
+				fmt.Println("Msg could not be delivered to server, server not listening..")
+			}
+
+			kademlia.foundHashes[string(msg.Data)] = true
+			// QUESTION: is the below line needed? or handled by server?
+			//kademlia.Store(string(msg.Data), DOWNLOAD_PATH, false)
 
 		default:
 			fmt.Println("GOT DEFAULT")
@@ -301,10 +321,6 @@ func (kademlia *Kademlia) PublishData(hash string, path string) {
 func (kademlia *Kademlia) Get(hash string) string {
 	return kademlia.files[hash]
 }
-
-/*func (kademlia *Kademlia) Store(hash string, path string){
-	kademlia.files[hash] = path
-}*/
 
 func (kademlia *Kademlia) Store(hash string, path string, me bool) {
 	//hash := HashStr(fileName)
