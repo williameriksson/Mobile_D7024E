@@ -2,6 +2,7 @@ package d7024e_test
 
 import (
 	"Mobile_D7024E/d7024e"
+	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -44,7 +45,7 @@ func TestKademliaInstantiation(t *testing.T) {
 // }
 
 /*
-*	Sets up a network of n nodes, conditons for PASS is that all nodes in the network has knowledge of at leat k(20) nodes
+*	Sets up a network of n nodes, conditons for PASS is that all nodes in the network has knowledge of at least k(20) nodes
  */
 func TestKademlia(t *testing.T) {
 	kademlia1 := d7024e.NewKademlia()
@@ -59,7 +60,7 @@ func TestKademlia(t *testing.T) {
 	for i := 0; i < count; i++ {
 		kademliaArray[i] = d7024e.NewKademlia()
 		go kademliaArray[i].Run("127.0.0.1:8000", "127.0.0.1:"+strconv.Itoa(port+i))
-		time.Sleep(time.Millisecond * 50)
+		time.Sleep(time.Millisecond * 100)
 	}
 
 	var minBucketPop = count
@@ -67,14 +68,16 @@ func TestKademlia(t *testing.T) {
 		minBucketPop = 20
 	}
 
-	time.Sleep(time.Millisecond * 100)
+	time.Sleep(time.Millisecond * 2000)
 	if len(kademlia1.RoutingTable.FindClosestNodes(d7024e.NewKademliaID("0000000000000000000000000000000000000000"), 20)) < minBucketPop {
 		t.Error("Bootstrap fail")
 	}
 
 	for j := 0; j < count; j++ {
 		if len(kademliaArray[j].RoutingTable.FindClosestNodes(d7024e.NewKademliaID("0000000000000000000000000000000000000000"), 20)) < minBucketPop {
-			t.Error(kademliaArray[j].RoutingTable.GetMyAdress() + " : " + strconv.Itoa(len(kademliaArray[j].RoutingTable.FindClosestNodes(d7024e.NewKademliaID("0000000000000000000000000000000000000000"), 20))) + " != " + strconv.Itoa(count))
+			t.Error(kademliaArray[j].RoutingTable.GetMyAdress() + " : " + strconv.Itoa(len(kademliaArray[j].RoutingTable.FindClosestNodes(d7024e.NewKademliaID("0000000000000000000000000000000000000000"), count))) + " != " + strconv.Itoa(minBucketPop))
+		} else {
+			fmt.Println(kademliaArray[j].RoutingTable.GetMyAdress() + " : " + strconv.Itoa(len(kademliaArray[j].RoutingTable.FindClosestNodes(d7024e.NewKademliaID("0000000000000000000000000000000000000000"), count))))
 		}
 	}
 }

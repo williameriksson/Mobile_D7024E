@@ -49,8 +49,8 @@ func TestRemoveNodeRoutingTable(t *testing.T) {
 	if len(rt.FindClosestNodes(&otherNode.ID, 1)) != 1 {
 		t.Error("failed to add bucket")
 	}
-
-	rt.RemoveNode(&otherNode)
+	node := rt.FindClosestNodes(&otherNode.ID, 1)
+	rt.RemoveNode(&node[0])
 	if len(rt.FindClosestNodes(&otherNode.ID, 1)) != 0 {
 		t.Error("failed to remove bucket")
 	}

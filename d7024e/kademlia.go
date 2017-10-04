@@ -10,24 +10,28 @@ import (
 
 const alpha int = 3
 const k int = 20
-const timeOutTime time.Duration = 1000
+const timeOutTime time.Duration = time.Duration(1000) * time.Millisecond
 
 type Kademlia struct {
-	Network       Network
-	files         map[string]string // Hash table mapping sha-1 hash (base64 encoded) to some data
-	RoutingTable  *RoutingTable
-	LookupCount   int
-	LookupValueCount int
-	returnedNodes NodeCandidates
+	Network            Network
+	files              map[string]string // Hash table mapping sha-1 hash (base64 encoded) to some data
+	RoutingTable       *RoutingTable
+	LookupCount        int
+	LookupValueCount   int
+	returnedNodes      NodeCandidates
 	returnedValueNodes NodeCandidates
-	returnedValue []byte
-	Datainfo	DataInformation
+	returnedValue      []byte
+	Datainfo           DataInformation
+	pingedNodes        map[Node]bool
+	timeoutChannel     chan bool
 }
 
 // Constructor
 func NewKademlia() *Kademlia {
 	var kademlia Kademlia
 	kademlia.files = make(map[string]string)
+	kademlia.pingedNodes = make(map[Node]bool)
+	kademlia.timeoutChannel = make(chan bool)
 	return &kademlia
 }
 
@@ -46,14 +50,12 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 
 	myID := NewRandomKademliaID() //temp ID
 	//fmt.Printf("ID: 0x%X\n", myID)
-	bootStrapID := NewRandomKademliaID() //20 byte id temp ID TODO: bootstrap should NOT be assigned a random ID.
-
+	bootStrapID := NewRandomKademliaID() //20 byte id temp ID (to allow using bootstrap as a node, discarded later)
 	myNode := NewNode(myID, myIP)
 	kademlia.RoutingTable = NewRoutingTable(myNode)
 
 	kademlia.Network = Network{me: &kademlia.RoutingTable.me, MsgChannel: make(chan Message), TestChannel: make(chan string, 100)}
 	// kademlia.Network.TestChannel <- ("My ID : " + myID.String())
-
 
 	go kademlia.RepublishData()
 	go kademlia.PurgeData()
@@ -78,7 +80,7 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 				kademlia.RoutingTable.AddNode(NewNode(NewKademliaID(confirmation.SenderNode.ID.String()), bootStrapIP))
 				queriedNodes := make(map[string]bool)
 				nodeCandidates := NodeCandidates{}
-				kademlia.LookupNode(&kademlia.RoutingTable.me.ID, queriedNodes, nodeCandidates, 0)
+				go kademlia.LookupNode(&kademlia.RoutingTable.me.ID, queriedNodes, nodeCandidates, 0)
 
 				secondConfirm := <-kademlia.Network.MsgChannel
 				if secondConfirm.Command == cmd_find_node_returned {
@@ -123,7 +125,7 @@ func (kademlia *Kademlia) channelReader() {
 		kademlia.RoutingTable.AddNode(msg.SenderNode)
 		switch msg.Command {
 		case cmd_ping_ack:
-			kademlia.Network.TestChannel <- kademlia.RoutingTable.me.Address + (" GOT PING_ACK")
+			kademlia.pingedNodes[msg.SenderNode] = true //node has returned ping request.
 
 		case cmd_ping:
 			kademlia.Network.SendPingAck(&msg.SenderNode)
@@ -176,11 +178,10 @@ func (kademlia *Kademlia) channelReader() {
 		tmpString := ""
 
 		for key, value := range kademlia.files {
-	    tmpString += "Key: " + key + "Value: " + string(value)
-	  }
+			tmpString += "Key: " + key + "Value: " + string(value)
+		}
 
-
-		kademlia.WriteToFile(kademlia.RoutingTable.me.ID.String()+".txt", []byte(tmpString))
+		// kademlia.WriteToFile(kademlia.RoutingTable.me.ID.String()+".txt", []byte(tmpString))
 		//kademlia.WriteToFile(kademlia.RoutingTable.me.ID.String()+".txt", []byte(kademlia.RoutingTable.GetRoutingTable()))
 	}
 }
@@ -203,6 +204,10 @@ func (kademlia *Kademlia) findNodeReturn(senderNode *Node, nodeList []Node) {
 		// kademlia.Network.SendPingMessage(&nodeList[i])
 		kademlia.RoutingTable.AddNode(nodeList[i])
 	}
+	select {
+	case kademlia.timeoutChannel <- true:
+	default:
+	}
 }
 
 func (kademlia *Kademlia) LookupNode(target *KademliaID, queriedNodes map[string]bool, prevBestNodes NodeCandidates, recCount int) {
@@ -220,19 +225,21 @@ func (kademlia *Kademlia) LookupNode(target *KademliaID, queriedNodes map[string
 	}
 
 	timeout := false
-	timeStamp := time.Now()
-
-	for (kademlia.LookupCount < 1) && !timeout {
-		//busy waiting for at least one RETURN_FIND_NODE
-		if time.Now().Sub(timeStamp) > timeOutTime {
-			timeout = true
-		}
+	select {
+	case <-kademlia.timeoutChannel:
+		timeout = false
+	case <-time.After(time.Second * 1):
+		timeout = true
 	}
 
 	if !timeout {
-		fmt.Println("RETURNEDNODES: ", kademlia.returnedValueNodes)
+		// fmt.Println("RETURNEDNODES: ", kademlia.returnedValueNodes)
 		kademlia.returnedNodes.Sort() //what does this do
-		bestNodes := NodeCandidates{nodes: kademlia.returnedNodes.GetNodes(k)}
+		count := kademlia.returnedNodes.Len()
+		if count > k {
+			count = k
+		}
+		bestNodes := NodeCandidates{nodes: kademlia.returnedNodes.GetNodes(count)}
 		if bestNodes.nodes[0].ID.String() == target.String() {
 			//first node IS target means we DID find it this run.
 		} else if recCount == k {
@@ -272,16 +279,26 @@ func (kademlia *Kademlia) PingAllNodes() {
 	}
 }
 
+func (kademlia *Kademlia) CheckAlive() {
+	nodes := kademlia.RoutingTable.FindClosestNodes(&kademlia.RoutingTable.me.ID, kademlia.RoutingTable.GetSize())
+	for i := 0; i < len(nodes); i++ {
+		kademlia.pingedNodes[nodes[i]] = false //set the node as not returned ping yet
+	}
+	kademlia.PingAllNodes() //pings all the nodes
+	//TODO: add timeout here, upon timeout all NODE:FALSE pairs in pingedNodes map should be removed from RoutingTable.
+	time.After(timeOutTime)
+}
+
 func (kademlia *Kademlia) PublishData(hash string, path string) {
 
 	closestNodes := kademlia.RoutingTable.FindClosestNodes(NewKademliaID(hash), k)
 	for i := 0; i < len(closestNodes); i++ {
-    kademlia.Network.SendStoreMessage(&closestNodes[i], []byte(hash))
+		kademlia.Network.SendStoreMessage(&closestNodes[i], []byte(hash))
 	}
 	kademlia.Store(hash, path, true)
 }
 
-func (kademlia *Kademlia) Get(hash string) string{
+func (kademlia *Kademlia) Get(hash string) string {
 	return kademlia.files[hash]
 }
 
@@ -295,7 +312,7 @@ func (kademlia *Kademlia) Store(hash string, path string, me bool) {
 
 	if me {
 		for _, myKey := range kademlia.Datainfo.MyKeys {
-			if (myKey == hash) {
+			if myKey == hash {
 				return
 			}
 		}
@@ -304,7 +321,7 @@ func (kademlia *Kademlia) Store(hash string, path string, me bool) {
 	}
 
 	for _, purgeInfo := range kademlia.Datainfo.PurgeInfos {
-		if (purgeInfo.Key == hash) {
+		if purgeInfo.Key == hash {
 			kademlia.SetPurgeStamp(&purgeInfo)
 			return
 		}
