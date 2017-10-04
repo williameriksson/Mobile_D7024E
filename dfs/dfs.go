@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"io/ioutil"
+	"io"
 	"strconv"
 	"time"
 	"path/filepath"
@@ -75,6 +76,24 @@ func main() {
 			get(addr+"/addnode/127.0.0.1:"+strconv.Itoa(port+i)+"?bootstrap=127.0.0.1:"+strconv.Itoa(port))
 			time.Sleep(time.Millisecond * 1000)
 		}
+	case "download":
+		fp := "C:/Users/David/go/src/Mobile_D7024E/dfs/myfile2.txt"
+		resp, err := http.Get(addr+"/download/a")
+		if err != nil {
+			log.Fatal(err)
+		}
+		out, err := os.Create(fp)
+		if err != nil  {
+			log.Fatal(err)
+		}
+		defer out.Close()
+
+		_, err = io.Copy(out, resp.Body)
+		defer resp.Body.Close()
+		if err != nil {
+	    	log.Fatal(err)
+		}
+	    fmt.Println("downloaded to "+fp)
 	default:
 		log.Fatal("Unknown argument ", cmds[1])
 	}
