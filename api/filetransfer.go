@@ -12,9 +12,13 @@ import (
 
 func GetFile(hash string, ip string){
 	log.Println("GetFile()")
-	resp, err := http.Get("http://"+ip+"/download/"+hash)
+
+	url := "http://"+ip+"/download/"+hash
+	log.Println("     url: " + url)
+
+	resp, err := http.Get(url)
 	if err != nil {
-		log.Fatal("http.Get error: "+ err)
+		log.Fatal("http.Get error: ", err)
 	}
 
 	content := resp.Header.Get("Content-Disposition")
