@@ -34,10 +34,14 @@ func Cat(w http.ResponseWriter, r *http.Request) {
 	out, err := os.Open(fp)
 	defer out.Close()
 	if err != nil  {
-		// SEARCH KADEMLIA FOR FILE
-		kademlia.LookupValue(hash)
+		log.Println("I don't have file: ", err)
+		
+		// Search Kademlia Network for file
+		go kademlia.LookupValue(hash)
 
+		// Wait on response from kademlia
 		ip := <- res
+		ip = convertIP(ip)
 
 		resp, err := http.Get("http://"+ip+"/cat/"+hash)
 		if err != nil {

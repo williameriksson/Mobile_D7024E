@@ -34,7 +34,7 @@ func main() {
 
 		// Check if file exists
 		if file, err := os.Stat(path); os.IsNotExist(err) {
-			log.Fatal("File doesn't exist.")
+			log.Fatal(err)
 		} else if file.Mode().IsDir(){
 			// If "file" is a directory it throws fatal error
 			log.Fatal("Not a file.")

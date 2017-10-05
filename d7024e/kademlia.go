@@ -33,6 +33,7 @@ type Kademlia struct {
 func NewKademlia() *Kademlia {
 	var kademlia Kademlia
 	kademlia.files = make(map[string]string)
+	kademlia.foundHashes = make(map[string]bool)
 	kademlia.pingedNodes = make(map[Node]bool)
 	kademlia.timeoutChannel = make(chan bool)
 	kademlia.valueTimeoutChan = make(chan bool)
@@ -55,7 +56,7 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 
 	myID := NewRandomKademliaID() //temp ID
 	//fmt.Printf("ID: 0x%X\n", myID)
-	bootStrapID := NewRandomKademliaID() //20 byte id temp ID (to allow using bootstrap as a node, discarded later)
+	bootStrapID := NewKademliaID("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF") //20 byte id temp ID (to allow using bootstrap as a node, discarded later)
 	myNode := NewNode(myID, myIP)
 	kademlia.RoutingTable = NewRoutingTable(myNode)
 
