@@ -42,10 +42,15 @@ func (kademlia *Kademlia) FindValue(senderNode *Node, hash *KademliaID) {
   }
 }
 
+func (kademlia *Kademlia) LookupValue(hash string) {
+  hashId := NewKademliaID(hash)
+  kademlia.lookupValue(hashId, make(map[string]bool), NodeCandidates{}, 0)
+}
+
 
 // If THIS node wants to find a value, it shall call this function. ex:
 // kademlia.LookupValue(hash, make(map[string]bool), NodeCandidates{}, 0)
-func (kademlia *Kademlia) LookupValue(hash *KademliaID, queriedNodes map[string]bool, prevBestNodes NodeCandidates, recCount int) {
+func (kademlia *Kademlia) lookupValue(hash *KademliaID, queriedNodes map[string]bool, prevBestNodes NodeCandidates, recCount int) {
 	kademlia.LookupValueCount = 0
 	kademlia.returnedValueNodes = prevBestNodes
 
@@ -93,11 +98,11 @@ func (kademlia *Kademlia) LookupValue(hash *KademliaID, queriedNodes map[string]
     		//did NOT find the data after k attempts
     	} else {
     		//did NOT find data, continue search
-    		kademlia.LookupValue(hash, queriedNodes, bestNodes, (recCount + 1))
+    		kademlia.lookupValue(hash, queriedNodes, bestNodes, (recCount + 1))
     	}
     }
   } else {
-    kademlia.LookupValue(hash, queriedNodes, prevBestNodes, (recCount + 1))
+    kademlia.lookupValue(hash, queriedNodes, prevBestNodes, (recCount + 1))
   }
 
 }
