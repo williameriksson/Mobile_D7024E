@@ -60,7 +60,9 @@ func (kademlia *Kademlia) lookupValue(hash *KademliaID, queriedNodes map[string]
 		if queriedNodes[hash.String()] == false {
 			queriedNodes[hash.String()] = true
       fmt.Println("!!!!!SENDING THE FIND DATA MESSAGE!!!!!")
-      kademlia.Network.SendFindDataMessage(&closestNodes[i], hash)
+      if closestNodes[i].ID != kademlia.RoutingTable.me.ID {
+        kademlia.Network.SendFindDataMessage(&closestNodes[i], hash)
+      }
 		}
 	}
 
