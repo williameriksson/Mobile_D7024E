@@ -15,7 +15,7 @@ var kademlia *d7024e.Kademlia
 
 func StartServer(kad *d7024e.Kademlia) {
     kademlia = kad
-    default_dir = default_dir+kademlia.RoutingTable.GetMyID()
+    default_dir = default_dir+kademlia.RoutingTable.GetMyID()+"/"
 
     myIP := kademlia.RoutingTable.GetMyIP()
     myIP = convertIP(myIP)
