@@ -21,7 +21,7 @@ var routes = Routes{
 	Route{
 		"Cat",
 		"GET",
-		"/cat/{filename}",
+		"/cat/{hash}",
 		Cat,
 	},
 	Route{
@@ -33,13 +33,13 @@ var routes = Routes{
 	Route{
 		"Pin",
 		"GET",
-		"/pin/{filename}",
+		"/pin/{hash}",
 		Pin,
 	},
 	Route{
 		"Unpin",
 		"GET",
-		"/unpin/{filename}",
+		"/unpin/{hash}",
 		Unpin,
 	},
 	Route{
@@ -47,5 +47,11 @@ var routes = Routes{
 		"GET",
 		"/addnode/{addr}",
 		AddNode,
+	},
+	Route{
+		"Download",
+		"GET",
+		"/download/{hash}",
+		Download,
 	},
 }
