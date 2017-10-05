@@ -16,7 +16,7 @@ import (
 
 // Compile command: go build -o dfs.exe dfs.go
 
-const addr string = "http://127.0.0.1:8080"
+const addr string = "http://127.0.0.1:9100"
 const dir string = "C:/Users/David/go/src/Mobile_D7024E/files/"
 
 func main() {

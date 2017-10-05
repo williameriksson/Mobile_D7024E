@@ -12,10 +12,12 @@ import (
 //const addr string = ":8080"
 var default_dir string = "C:/Users/David/go/src/Mobile_D7024E/files/"
 var kademlia *d7024e.Kademlia
+var res chan string
 
 func StartServer(kad *d7024e.Kademlia) {
+    res = make(chan string)
     kademlia = kad
-    default_dir = default_dir+kademlia.RoutingTable.GetMyID()+"/"
+    default_dir = default_dir + kademlia.RoutingTable.GetMyID() + "/"
 
     myIP := kademlia.RoutingTable.GetMyIP()
     myIP = convertIP(myIP)
@@ -50,6 +52,8 @@ func StartServer(kad *d7024e.Kademlia) {
             handle := <-kademlia.ServerChannel
             switch handle.Command {
                 case common.CMD_FOUND_FILE:
+                    log.Println("CMD_FOUND_FILE")
+                    res <- handle.Ip
                 case common.CMD_RETRIEVE_FILE:
                     log.Println("CMD_RETRIEVE_FILE")
                     GetFile(handle.Hash, convertIP(handle.Ip))

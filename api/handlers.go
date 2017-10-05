@@ -35,8 +35,17 @@ func Cat(w http.ResponseWriter, r *http.Request) {
 	defer out.Close()
 	if err != nil  {
 		// SEARCH KADEMLIA FOR FILE
-		//asd := kademlia.LookupValue2(hash)
-		fmt.Fprintln(w, "File not found.")
+		kademlia.LookupValue(hash)
+
+		ip := <- res
+
+		resp, err := http.Get("http://"+ip+"/cat/"+hash)
+		if err != nil {
+			log.Print(err)
+		}
+
+		io.Copy(w, resp.Body)
+		defer resp.Body.Close()
 	} else {
 		// Writer the body to file
 		_, err = io.Copy(w, out)
@@ -54,6 +63,7 @@ func Store(w http.ResponseWriter, r *http.Request) {
 		filename = strings.ToLower(filename)
 		hash := HashStr(filename)
 		kademlia.PublishData(hash, path)
+		log.Println("handlers.go Store(): path = " + path)
 		fmt.Fprint(w, hash)
 	} else{
 		fmt.Fprintln(w, "Localhost only.")
