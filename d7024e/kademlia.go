@@ -269,6 +269,8 @@ func (kademlia *Kademlia) LookupNode(target *KademliaID, queriedNodes map[string
 			//did NOT find node, continue search
 			kademlia.LookupNode(target, queriedNodes, bestNodes, (recCount + 1))
 		}
+	} else {
+		kademlia.LookupNode(target, queriedNodes, prevBestNodes, (recCount + 1))
 	}
 }
 

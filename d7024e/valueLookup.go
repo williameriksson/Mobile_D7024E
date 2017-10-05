@@ -84,19 +84,20 @@ func (kademlia *Kademlia) LookupValue(hash *KademliaID, queriedNodes map[string]
       delete(kademlia.foundHashes, hash.String())
       return
     }
+    var length int
+    if length = k; kademlia.returnedValueNodes.Len() < k {
+      length = kademlia.returnedValueNodes.Len()
 
+	    bestNodes := NodeCandidates{nodes: kademlia.returnedValueNodes.GetNodes(length)}
+    	if recCount == k {
+    		//did NOT find the data after k attempts
+    	} else {
+    		//did NOT find data, continue search
+    		kademlia.LookupValue(hash, queriedNodes, bestNodes, (recCount + 1))
+    	}
+    }
+  } else {
+    kademlia.LookupValue(hash, queriedNodes, prevBestNodes, (recCount + 1))
   }
-  var length int
-  if length = k; kademlia.returnedValueNodes.Len() < k {
-    length = kademlia.returnedValueNodes.Len()
-  }
-
-	bestNodes := NodeCandidates{nodes: kademlia.returnedValueNodes.GetNodes(length)}
-	if recCount == k {
-		//did NOT find the data after k attempts
-	} else {
-		//did NOT find data, continue search
-		kademlia.LookupValue(hash, queriedNodes, bestNodes, (recCount + 1))
-	}
 
 }
