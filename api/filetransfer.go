@@ -11,9 +11,10 @@ import (
 )
 
 func GetFile(hash string, ip string){
-	resp, err := http.Get(ip+"/download/"+hash)
+	log.Println("GetFile()")
+	resp, err := http.Get("http://"+ip+"/download/"+hash)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("http.Get error: "+ err)
 	}
 
 	content := resp.Header.Get("Content-Disposition")
