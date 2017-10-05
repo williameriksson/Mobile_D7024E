@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"math/rand"
 	"strings"
+	"time"
 )
 
 const IDLength = 20
@@ -22,6 +23,7 @@ func NewKademliaID(data string) *KademliaID {
 }
 
 func NewRandomKademliaID() *KademliaID {
+	rand.Seed(time.Now().UnixNano())
 	newKademliaID := KademliaID{}
 	for i := 0; i < IDLength; i++ {
 		newKademliaID[i] = uint8(rand.Intn(256))
