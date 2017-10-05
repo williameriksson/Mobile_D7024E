@@ -34,7 +34,7 @@ func (kademlia *Kademlia) FindValue(senderNode *Node, hash *KademliaID) {
   fmt.Println("LOOKING FOR THIS HASH: ", strings.TrimSpace(strings.ToLower(hash.String())))
   if val, ok := kademlia.files[strings.TrimSpace(strings.ToLower(hash.String()))]; ok {
     kademlia.Network.SendReturnDataMessage(senderNode, []byte(hash.String()))
-    fmt.Printf("Yes, the value is %x \n", val)
+    fmt.Printf("Yes, the value is %v \n", val)
   } else {
     nodeList := kademlia.RoutingTable.FindClosestNodes(hash, k)
     fmt.Println("DID NOT FIND VALUE, THE NODELIST IS: ", nodeList)
@@ -59,8 +59,8 @@ func (kademlia *Kademlia) lookupValue(hash *KademliaID, queriedNodes map[string]
 	for i := 0; i < alpha && i < len(closestNodes); i++ {
 		if queriedNodes[hash.String()] == false {
 			queriedNodes[hash.String()] = true
-      fmt.Println("!!!!!SENDING THE FIND DATA MESSAGE!!!!!")
       if closestNodes[i].ID != kademlia.RoutingTable.me.ID {
+        fmt.Println("!!!!!SENDING THE FIND DATA MESSAGE!!!!!")
         kademlia.Network.SendFindDataMessage(&closestNodes[i], hash)
       }
 		}
@@ -85,9 +85,9 @@ func (kademlia *Kademlia) lookupValue(hash *KademliaID, queriedNodes map[string]
       // How do we make sure this isn't the node that we got it from? Maybe we have to save
       // the id of the node that sent the data and remove it from consideration. For now we just take
       // the node with the closest ID to the key
-      if (len(kademlia.returnedValueNodes.nodes) > 0) {
-        kademlia.Network.SendStoreMessage(&kademlia.returnedValueNodes.nodes[0], []byte(hash.String()))
-      }
+      // if (len(kademlia.returnedValueNodes.nodes) > 0) {
+      //   kademlia.Network.SendStoreMessage(&kademlia.returnedValueNodes.nodes[0], []byte(hash.String()))
+      // }
       delete(kademlia.foundHashes, hash.String())
       return
     }
