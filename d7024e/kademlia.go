@@ -182,7 +182,7 @@ func (kademlia *Kademlia) channelReader() {
 			fmt.Println("Found a node that holds the file!")
 			//Some node has returned the value that THIS node requested
 			select {
-			case kademlia.ServerChannel <- common.NewHandle(common.CMD_FOUND_FILE, string(msg.Data), msg.SenderNode.ID.String()):
+			case kademlia.ServerChannel <- common.NewHandle(common.CMD_FOUND_FILE, string(msg.Data), msg.SenderNode.Address):
 				fmt.Println("Msg delivered to server")
 			default:
 				fmt.Println("Msg could not be delivered to server, server not listening..")
