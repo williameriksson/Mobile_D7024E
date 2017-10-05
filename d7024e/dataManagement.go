@@ -1,6 +1,7 @@
 package d7024e
 
 import (
+  "Mobile_D7024E/common"
   "time"
 )
 
@@ -34,7 +35,10 @@ func (kademlia *Kademlia) PurgeData() {
 
   for _, purgeInfo := range kademlia.Datainfo.PurgeInfos {
     if !purgeInfo.Pinned && time.Now().After(purgeInfo.PurgeTimeStamp){
-      // TODO: Add functionality to remove the actual file also
+      select {
+      case kademlia.serverChannel <- common.NewHandle(common.CMD_REMOVE_FILE, purgeInfo.Key, ""):
+      default:
+      }
       delete(kademlia.files, purgeInfo.Key)
     }
   }
