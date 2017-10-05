@@ -10,8 +10,6 @@ import (
 	"mime"
 )
 
-const default_dir string = "C:/Users/David/go/src/Mobile_D7024E/files/"
-
 func GetFile(hash string, ip string){
 	resp, err := http.Get(ip+"/download/"+hash)
 	if err != nil {
@@ -38,5 +36,5 @@ func GetFile(hash string, ip string){
     	log.Fatal(err)
 	}
     fmt.Println("Downloaded to "+path)
-    kademlia.Set(hash, path)
+    kademlia.Store(hash, path, false)
 }

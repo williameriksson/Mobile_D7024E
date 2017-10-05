@@ -19,35 +19,30 @@ import (
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Kademlia API\n\nLocalhost:\n     GET:  /cat/{hash}\n     GET:  /pin/{hash}\n     GET:  /unpin/{hash}\n     GET:  /addnode/{addr}?boostrap={bootstrap_addr}\n     POST: /store/\nPublic:\n     GET:  /download/{hash}")
+	fmt.Fprint(w, "Kademlia API\n\nLocalhost:\n     GET:  /pin/{hash}\n     GET:  /unpin/{hash}\n     GET:  /addnode/{addr}?boostrap={bootstrap_addr}\n     POST: /store/\nPublic:\n     GET:  /cat/{hash}\n     GET:  /download/{hash}")
 }
 
 func Cat(w http.ResponseWriter, r *http.Request) {
-	if isLocalHost(r){
-		vars := mux.Vars(r)
-		hash := vars["hash"]
-		log.Println("hash:"+hash)
-		fp := kademlia.Get(hash)
-		log.Println("fp:"+fp)
-		/*w.Header().Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
-		w.Header().Set("Content-Type", r.Header.Get("Content-Type"))*/
-		// Create the file
-		out, err := os.Open(fp)
-		defer out.Close()
+	vars := mux.Vars(r)
+	hash := vars["hash"]
+	log.Println("hash:"+hash)
+	fp := kademlia.Get(hash)
+	log.Println("fp:"+fp)
+	/*w.Header().Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
+	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))*/
+	// Create the file
+	out, err := os.Open(fp)
+	defer out.Close()
+	if err != nil  {
+		// SEARCH KADEMLIA FOR FILE
+		//asd := kademlia.LookupValue2(hash)
+		fmt.Fprintln(w, "File not found.")
+	} else {
+		// Writer the body to file
+		_, err = io.Copy(w, out)
 		if err != nil  {
-			// SEARCH KADEMLIA FOR FILE
-			//asd := kademlia.LookupValue2(hash)
-			fmt.Fprintln(w, "File not found.")
-		} else {
-			// Writer the body to file
-			_, err = io.Copy(w, out)
-			if err != nil  {
-				log.Fatal(err)
-			}
+			log.Fatal(err)
 		}
-		
-	} else{
-		fmt.Fprintln(w, "Localhost only.")
 	}
 	
 }
@@ -58,8 +53,7 @@ func Store(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(path)
 		filename = strings.ToLower(filename)
 		hash := HashStr(filename)
-		kademlia.Set(hash, path)
-		//kademlia.PublishData(hash, path)
+		kademlia.PublishData(hash, path)
 		fmt.Fprint(w, hash)
 	} else{
 		fmt.Fprintln(w, "Localhost only.")

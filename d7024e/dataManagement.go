@@ -36,7 +36,7 @@ func (kademlia *Kademlia) PurgeData() {
   for _, purgeInfo := range kademlia.Datainfo.PurgeInfos {
     if !purgeInfo.Pinned && time.Now().After(purgeInfo.PurgeTimeStamp){
       select {
-      case kademlia.serverChannel <- common.NewHandle(common.CMD_REMOVE_FILE, purgeInfo.Key, ""):
+      case kademlia.ServerChannel <- common.NewHandle(common.CMD_REMOVE_FILE, purgeInfo.Key, ""):
       default:
       }
       delete(kademlia.files, purgeInfo.Key)

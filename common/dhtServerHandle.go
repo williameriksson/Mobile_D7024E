@@ -7,9 +7,9 @@ const (
 )
 
 type Handle struct {
-  command string
-  hash  string
-  ip    string
+  Command string
+  Hash  string
+  Ip    string
 }
 
 func NewHandle(cmd string, hash string, ip string) Handle {

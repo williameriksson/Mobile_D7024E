@@ -120,3 +120,11 @@ func (routingTable *RoutingTable) GetRoutingTable() string {
 	}
 	return tempString
 }
+
+func (routingTable *RoutingTable) GetMyID() string {
+	return routingTable.me.ID.String()
+}
+
+func (routingTable *RoutingTable) GetMyIP() string {
+	return routingTable.me.Address
+}

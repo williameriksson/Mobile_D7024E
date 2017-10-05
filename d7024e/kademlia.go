@@ -26,7 +26,7 @@ type Kademlia struct {
 	pingedNodes        map[Node]bool
 	timeoutChannel     chan bool
 	valueTimeoutChan   chan bool
-	serverChannel      chan common.Handle
+	ServerChannel      chan common.Handle
 }
 
 // Constructor
@@ -36,7 +36,7 @@ func NewKademlia() *Kademlia {
 	kademlia.pingedNodes = make(map[Node]bool)
 	kademlia.timeoutChannel = make(chan bool)
 	kademlia.valueTimeoutChan = make(chan bool)
-	kademlia.serverChannel = make(chan common.Handle)
+	kademlia.ServerChannel = make(chan common.Handle)
 	return &kademlia
 }
 
@@ -139,7 +139,7 @@ func (kademlia *Kademlia) channelReader() {
 			fmt.Println("GOT " + cmd_store)
 			// TODO: Add call to own server to establish tcp conn and get the actual file
 			select {
-			case kademlia.serverChannel <- common.NewHandle(common.CMD_RETRIEVE_FILE, string(msg.Data), msg.SenderNode.Address):
+			case kademlia.ServerChannel <- common.NewHandle(common.CMD_RETRIEVE_FILE, string(msg.Data), msg.SenderNode.Address):
 				fmt.Println("Sent message to server to get a file")
 			default:
 				fmt.Println("Could not deliver retrieve message to server, not listening")
@@ -182,7 +182,7 @@ func (kademlia *Kademlia) channelReader() {
 			fmt.Println("Found a node that holds the file!")
 			//Some node has returned the value that THIS node requested
 			select {
-			case kademlia.serverChannel <- common.NewHandle(common.CMD_FOUND_FILE, string(msg.Data), msg.SenderNode.ID.String()):
+			case kademlia.ServerChannel <- common.NewHandle(common.CMD_FOUND_FILE, string(msg.Data), msg.SenderNode.ID.String()):
 				fmt.Println("Msg delivered to server")
 			default:
 				fmt.Println("Msg could not be delivered to server, server not listening..")

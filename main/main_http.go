@@ -6,6 +6,7 @@ import (
     "Mobile_D7024E/d7024e"
     "os"
     "fmt"
+    "time"
 )
 
 // build: go build -o main.exe main.go
@@ -39,6 +40,7 @@ func main() {
         log.Fatal("Too many arguments.")
     }
     kademlia := d7024e.NewKademlia()
+    go kademlia.Run(bootstrap, addr)
+    time.Sleep(500*time.Millisecond)
     api.StartServer(kademlia)
-    kademlia.Run(bootstrap, addr)
 }
