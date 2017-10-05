@@ -19,16 +19,33 @@ import (
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Kademlia API\n\nLocalhost:\n     GET: /cat/{hash}\n     POST: /store/\n     GET: /pin/{hash}\n     GET: /unpin/{hash}\n     GET:/addnode/{addr}?boostrap={bootstrap_addr}\nPublic:\n     GET: /download/{hash}")
+	fmt.Fprint(w, "Kademlia API\n\nLocalhost:\n     GET:  /cat/{hash}\n     GET:  /pin/{hash}\n     GET:  /unpin/{hash}\n     GET:  /addnode/{addr}?boostrap={bootstrap_addr}\n     POST: /store/\nPublic:\n     GET:  /download/{hash}")
 }
 
 func Cat(w http.ResponseWriter, r *http.Request) {
 	if isLocalHost(r){
 		vars := mux.Vars(r)
-		filename := vars["filename"]
-		hash := HashStr(filename)
-		path := kademlia.Get(hash)
-		fmt.Fprintln(w, path)
+		hash := vars["hash"]
+		log.Println("hash:"+hash)
+		fp := kademlia.Get(hash)
+		log.Println("fp:"+fp)
+		/*w.Header().Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
+		w.Header().Set("Content-Type", r.Header.Get("Content-Type"))*/
+		// Create the file
+		out, err := os.Open(fp)
+		defer out.Close()
+		if err != nil  {
+			// SEARCH KADEMLIA FOR FILE
+			//asd := kademlia.LookupValue2(hash)
+			fmt.Fprintln(w, "File not found.")
+		} else {
+			// Writer the body to file
+			_, err = io.Copy(w, out)
+			if err != nil  {
+				log.Fatal(err)
+			}
+		}
+		
 	} else{
 		fmt.Fprintln(w, "Localhost only.")
 	}
@@ -97,13 +114,6 @@ func Download(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 	defer out.Close()
-
-	// Get the data
-	/*resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()*/
 
 	// Writer the body to file
 	_, err = io.Copy(w, out)

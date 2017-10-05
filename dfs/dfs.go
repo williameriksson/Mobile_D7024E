@@ -48,7 +48,17 @@ func main() {
 		
 		//fmt.Println(path)
 	case "cat":
-		get(addr+"/cat/"+cmds[2])
+		resp, err := http.Get(addr+"/cat/"+cmds[2])
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		text, err := ioutil.ReadAll(resp.Body)
+		defer resp.Body.Close()
+		if err != nil {
+	    	log.Fatal(err)
+		}
+	    fmt.Print(string(text))
 	case "pin":
 		get(addr+"/pin/"+cmds[2])
 	case "unpin":
