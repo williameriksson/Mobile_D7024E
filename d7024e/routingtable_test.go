@@ -66,3 +66,7 @@ func TestSizeRoutingTable(t *testing.T) {
 		t.Error("size failed")
 	}
 }
+
+func TestBucketQueue(t *testing.T) {
+
+}

@@ -49,7 +49,7 @@ func (bucket *bucket) RemoveNode(node *Node) {
 
 //adds a node to the queue (the list of nodes to be added when k-list isn't full anymore)
 func (bucket *bucket) AddToQueue(node *Node) {
-	bucket.queue.PushBack(node)
+	bucket.queue.PushBack(*node)
 }
 
 func (bucket *bucket) PopQueue() Node {
@@ -83,4 +83,8 @@ func (bucket *bucket) GetNodeAndCalcDistance(target *KademliaID) []Node {
 
 func (bucket *bucket) Len() int {
 	return bucket.list.Len()
+}
+
+func (bucket *bucket) QueueLen() int {
+	return bucket.queue.Len()
 }

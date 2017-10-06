@@ -39,11 +39,25 @@ func (routingTable *RoutingTable) AddNode(node Node) {
 		bucket := routingTable.buckets[bucketIndex]
 		//check if buckets are full (i.e k amount of nodes)
 		if routingTable.GetBucketSize(bucketIndex) >= k {
-			nodes := bucket.GetNodelist()
-			routingTable.CheckAlive(nodes)
+			go routingTable.addNodeFullBucket(node)
 		} else {
 			bucket.AddNode(node)
 		}
+	}
+}
+
+//starts asynchronously when a bucket is full to check if node can be added.
+func (routingTable *RoutingTable) addNodeFullBucket(node Node) {
+	bucketIndex := routingTable.GetBucketIndex(&node.ID)
+	bucket := routingTable.buckets[bucketIndex]
+	bucket.AddToQueue(&node)
+
+	nodes := bucket.GetNodelist()
+	routingTable.CheckAlive(nodes)
+
+	for routingTable.GetBucketSize(bucketIndex) < k && bucket.queue.Len() != 0 {
+		//at least one node was removed from bucket in question
+		bucket.AddNode(bucket.PopQueue())
 	}
 }
 
