@@ -3,6 +3,7 @@ package d7024e
 import (
   "Mobile_D7024E/common"
   "time"
+  "fmt"
 )
 
 const (
@@ -37,9 +38,10 @@ func (kademlia *Kademlia) PurgeData() {
     if !purgeInfo.Pinned && time.Now().After(purgeInfo.PurgeTimeStamp){
       select {
       case kademlia.ServerChannel <- common.NewHandle(common.CMD_REMOVE_FILE, purgeInfo.Key, ""):
-      default:
+        delete(kademlia.files, purgeInfo.Key)
+      case <-time.After(time.Millisecond * 50):
+        fmt.Println("Could not purge the data, handler did not read the channel")
       }
-      delete(kademlia.files, purgeInfo.Key)
     }
   }
   time.AfterFunc(PURGEINTERVAL, kademlia.PurgeData)
@@ -47,6 +49,6 @@ func (kademlia *Kademlia) PurgeData() {
 }
 
 func (kademlia *Kademlia) SetPurgeStamp(purgeInfo *PurgeInformation) {
-  duration := time.Duration(60)*time.Second
+  duration := REPUBLISHINTERVAL * 2
   purgeInfo.PurgeTimeStamp = time.Now().Add(duration)
 }
