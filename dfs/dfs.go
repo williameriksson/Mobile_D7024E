@@ -17,12 +17,16 @@ import (
 // Compile command: go build -o dfs.exe dfs.go
 
 const addr string = "http://127.0.0.1:9100"
-const dir string = "C:/Users/David/go/src/Mobile_D7024E/files/"
 
 func main() {
 	cmds := os.Args
 	if len(cmds) < 3 {
 		log.Fatal("Too few arguments.")
+	}
+
+	dir, dir_err := os.Getwd()
+	if dir_err != nil {
+		log.Fatal(dir_err)
 	}
 
 	switch cmds[1] {
@@ -101,7 +105,7 @@ func main() {
 		}
 		filename := params["filename"]
 		
-		out, err := os.Create(dir + filename)
+		out, err := os.Create(filepath.Join(dir, filename))
 		if err != nil  {
 			log.Fatal(err)
 		}
@@ -112,7 +116,7 @@ func main() {
 		if err != nil {
 	    	log.Fatal(err)
 		}
-	    fmt.Println("Downloaded to "+dir+filename)
+	    fmt.Println("Downloaded to "+ filepath.Join(dir, filename))
 	default:
 		log.Fatal("Unknown argument ", cmds[1])
 	}

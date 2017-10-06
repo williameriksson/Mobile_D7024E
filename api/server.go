@@ -64,6 +64,8 @@ func StartServer(kad *d7024e.Kademlia) {
                     log.Println("CMD_RETRIEVE_FILE")
                     GetFile(handle.Hash, convertIP(handle.Ip))
                 case common.CMD_REMOVE_FILE:
+                    log.Println("CMD_REMOVE_FILE")
+                    DeleteFile(handle.Ip)
                 default:
             }
         }
