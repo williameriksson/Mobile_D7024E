@@ -39,8 +39,20 @@ func Cat(w http.ResponseWriter, r *http.Request) {
 		// Search Kademlia Network for file
 		go kademlia.LookupValue(hash)
 
+		var ip string
+
+		select {
+		
 		// Wait on response from kademlia
-		ip := <- res
+		case ip = <- res:
+		// Timeout
+		case <- time.After(time.Second * 2):
+			log.Println("Timeout in Cat() function.")
+			fmt.Fprint(w, "Error, Timeout in Cat() function.")
+			return
+		}
+		
+		// Change from kademlia port to API port
 		ip = convertIP(ip)
 
 		resp, err := http.Get("http://"+ip+"/cat/"+hash)
