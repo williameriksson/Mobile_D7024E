@@ -21,7 +21,7 @@ type Kademlia struct {
 	LookupValueCount   int
 	returnedNodes      NodeCandidates
 	returnedValueNodes NodeCandidates
-	foundHashes        map[string]bool
+	foundHashes        map[string]Node
 	Datainfo           DataInformation
 	pingedNodes        map[Node]bool
 	timeoutChannel     chan bool
@@ -33,7 +33,6 @@ type Kademlia struct {
 func NewKademlia() *Kademlia {
 	var kademlia Kademlia
 	kademlia.files = make(map[string]string)
-	kademlia.foundHashes = make(map[string]bool)
 	kademlia.pingedNodes = make(map[Node]bool)
 	kademlia.timeoutChannel = make(chan bool)
 	kademlia.valueTimeoutChan = make(chan bool)
@@ -56,7 +55,7 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 
 	myID := NewRandomKademliaID() //temp ID
 	//fmt.Printf("ID: 0x%X\n", myID)
-	bootStrapID := NewKademliaID("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF") //20 byte id temp ID (to allow using bootstrap as a node, discarded later)
+	bootStrapID := NewRandomKademliaID() //20 byte id temp ID (to allow using bootstrap as a node, discarded later)
 	myNode := NewNode(myID, myIP)
 	kademlia.RoutingTable = NewRoutingTable(myNode)
 
@@ -189,7 +188,7 @@ func (kademlia *Kademlia) channelReader() {
 				fmt.Println("Msg could not be delivered to server, server not listening..")
 			}
 
-			kademlia.foundHashes[string(msg.Data)] = true
+			kademlia.foundHashes[string(msg.Data)] = msg.SenderNode
 			// QUESTION: is the below line needed? or handled by server?
 			//kademlia.Store(string(msg.Data), DOWNLOAD_PATH, false)
 

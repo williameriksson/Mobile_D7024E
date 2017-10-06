@@ -37,11 +37,11 @@ func (kademlia *Kademlia) PurgeData() {
   for _, purgeInfo := range kademlia.Datainfo.PurgeInfos {
     if !purgeInfo.Pinned && time.Now().After(purgeInfo.PurgeTimeStamp){
       select {
-      case kademlia.ServerChannel <- common.NewHandle(common.CMD_REMOVE_FILE, purgeInfo.Key, ""):
-        delete(kademlia.files, purgeInfo.Key)
+      case kademlia.ServerChannel <- common.NewHandle(common.CMD_REMOVE_FILE, "", kademlia.files[purgeInfo.Key]):
       case <-time.After(time.Millisecond * 50):
         fmt.Println("Could not purge the data, handler did not read the channel")
       }
+      delete(kademlia.files, purgeInfo.Key)
     }
   }
   time.AfterFunc(PURGEINTERVAL, kademlia.PurgeData)
