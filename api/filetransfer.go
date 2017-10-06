@@ -29,8 +29,13 @@ func GetFile(hash string, ip string){
 	filename := params["filename"]
 	path := default_dir + filename
 
+	// If file already exists: return
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+ 		log.Println(err)
+ 		return
+	}
 
-	
+
 	out, err := os.Create(path)
 	if err != nil  {
 		log.Fatal(err)

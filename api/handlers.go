@@ -89,8 +89,8 @@ func Store(w http.ResponseWriter, r *http.Request) {
 
 func Pin(w http.ResponseWriter, r *http.Request) {
 	if isLocalHost(r){
-		fmt.Fprintln(w, "Pin endpoint")
 		vars := mux.Vars(r)
+		//kademlia.Pin(hash)
 		fmt.Fprintln(w, vars["hash"])
 	} else{
 		fmt.Fprintln(w, "Localhost only.")
@@ -99,8 +99,8 @@ func Pin(w http.ResponseWriter, r *http.Request) {
 
 func Unpin(w http.ResponseWriter, r *http.Request) {
 	if isLocalHost(r){
-		fmt.Fprintln(w, "Unpin endpoint")
 		vars := mux.Vars(r)
+		//kademlia.Unpin(hash)
 		fmt.Fprintln(w, vars["hash"])
 	} else{
 		fmt.Fprintln(w, "Localhost only.")
