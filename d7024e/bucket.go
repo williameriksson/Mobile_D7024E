@@ -5,12 +5,14 @@ import (
 )
 
 type bucket struct {
-	list *list.List
+	list  *list.List
+	queue *list.List
 }
 
 func NewBucket() *bucket {
 	bucket := &bucket{}
 	bucket.list = list.New()
+	bucket.queue = list.New()
 	return bucket
 }
 
@@ -43,6 +45,28 @@ func (bucket *bucket) RemoveNode(node *Node) {
 			bucket.list.Remove(e)
 		}
 	}
+}
+
+//adds a node to the queue (the list of nodes to be added when k-list isn't full anymore)
+func (bucket *bucket) AddToQueue(node *Node) {
+	bucket.queue.PushBack(node)
+}
+
+func (bucket *bucket) PopQueue() Node {
+	var node Node
+	node = bucket.queue.Front().Value.(Node)
+	bucket.queue.Remove(bucket.queue.Front())
+	return node //throw an error perhaps?
+}
+
+func (bucket *bucket) GetNodelist() []Node {
+	var nodes []Node
+
+	for e := bucket.list.Front(); e != nil; e = e.Next() {
+		node := e.Value.(Node)
+		nodes = append(nodes, node)
+	}
+	return nodes
 }
 
 func (bucket *bucket) GetNodeAndCalcDistance(target *KademliaID) []Node {

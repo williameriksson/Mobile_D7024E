@@ -9,7 +9,7 @@ import (
 func TestRoutingTable(t *testing.T) {
 	testNodes := 5
 	myID := d7024e.NewKademliaID("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
-	rt := d7024e.NewRoutingTable(d7024e.NewNode(myID, "localhost:8000"))
+	rt := d7024e.NewRoutingTable(d7024e.NewNode(myID, "localhost:8000"), nil)
 
 	for i := 1; i <= testNodes; i++ {
 		address := "localhost:800" + strconv.Itoa(i+1)
@@ -44,7 +44,7 @@ func TestRemoveNodeRoutingTable(t *testing.T) {
 	myNode := d7024e.NewNode(d7024e.NewKademliaID("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"), "localhost:8000")
 	otherNode := d7024e.NewNode(d7024e.NewKademliaID("0000000000000000000000000000000000000000"), "localhost:8001")
 
-	rt := d7024e.NewRoutingTable(myNode)
+	rt := d7024e.NewRoutingTable(myNode, nil)
 	rt.AddNode(otherNode)
 	if len(rt.FindClosestNodes(&otherNode.ID, 1)) != 1 {
 		t.Error("failed to add bucket")
@@ -60,7 +60,7 @@ func TestSizeRoutingTable(t *testing.T) {
 	myNode := d7024e.NewNode(d7024e.NewKademliaID("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"), "localhost:8000")
 	otherNode := d7024e.NewNode(d7024e.NewKademliaID("0000000000000000000000000000000000000000"), "localhost:8001")
 
-	rt := d7024e.NewRoutingTable(myNode)
+	rt := d7024e.NewRoutingTable(myNode, nil)
 	rt.AddNode(otherNode)
 	if rt.GetSize() != 1 {
 		t.Error("size failed")
