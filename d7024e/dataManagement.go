@@ -7,7 +7,7 @@ import (
 )
 
 const (
-  REPUBLISHINTERVAL time.Duration = time.Duration(60)*time.Second
+  REPUBLISHINTERVAL time.Duration = time.Duration(20)*time.Second
   PURGEINTERVAL time.Duration = time.Duration(10)*time.Second
 )
 
@@ -34,7 +34,7 @@ func (kademlia *Kademlia) RepublishData() {
 // if sorting mechanism is implemented
 func (kademlia *Kademlia) PurgeData() {
 
-  for _, purgeInfo := range kademlia.Datainfo.PurgeInfos {
+  for index, purgeInfo := range kademlia.Datainfo.PurgeInfos {
     if !purgeInfo.Pinned && time.Now().After(purgeInfo.PurgeTimeStamp){
       select {
       case kademlia.ServerChannel <- common.NewHandle(common.CMD_REMOVE_FILE, "", kademlia.files[purgeInfo.Key]):
@@ -42,6 +42,7 @@ func (kademlia *Kademlia) PurgeData() {
         fmt.Println("Could not purge the data, handler did not read the channel")
       }
       delete(kademlia.files, purgeInfo.Key)
+      kademlia.Datainfo.PurgeInfos = append(kademlia.Datainfo.PurgeInfos[:index], kademlia.Datainfo.PurgeInfos[index + 1:]...)
     }
   }
   time.AfterFunc(PURGEINTERVAL, kademlia.PurgeData)

@@ -37,6 +37,7 @@ func NewKademlia() *Kademlia {
 	kademlia.timeoutChannel = make(chan bool)
 	kademlia.valueTimeoutChan = make(chan bool)
 	kademlia.ServerChannel = make(chan common.Handle)
+	kademlia.foundHashes = make(map[string]Node)
 	return &kademlia
 }
 
