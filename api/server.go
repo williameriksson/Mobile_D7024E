@@ -7,10 +7,11 @@ import (
     "Mobile_D7024E/d7024e"
     "os"
     "Mobile_D7024E/common"
+    "time"
 )
 
 //const addr string = ":8080"
-var default_dir string = "C:/Users/David/go/src/Mobile_D7024E/files/"
+var default_dir string = "C:/Users/A1201-admin/go/src/Mobile_D7024E/files/"
 var kademlia *d7024e.Kademlia
 var res chan string
 
@@ -30,7 +31,7 @@ func StartServer(kad *d7024e.Kademlia) {
             log.Fatal(mk)
         }
     }
-    
+
     log.Print(default_dir)
     router := mux.NewRouter().StrictSlash(true)
 
@@ -53,15 +54,20 @@ func StartServer(kad *d7024e.Kademlia) {
             switch handle.Command {
                 case common.CMD_FOUND_FILE:
                     log.Println("CMD_FOUND_FILE")
-                    res <- handle.Ip
+                    select {
+                      case  res <- handle.Ip:
+                      case <-time.After(time.Second * 2):
+                        log.Println("Handler did not listen, timeout")
+                    }
+
                 case common.CMD_RETRIEVE_FILE:
                     log.Println("CMD_RETRIEVE_FILE")
                     GetFile(handle.Hash, convertIP(handle.Ip))
                 case common.CMD_REMOVE_FILE:
                 default:
-            }    
+            }
         }
-        
+
     }()
     log.Fatal(http.ListenAndServe(myPort, router))
 
