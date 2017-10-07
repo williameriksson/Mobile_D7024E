@@ -35,9 +35,12 @@ func GetFile(purgeInfo d7024e.PurgeInformation, ip string){
 
 	log.Println("path = " + path)
 
-	// If file already exists: return
+	//If file already exists: return
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
- 		log.Println("File already exists error: ", err)
+ 		log.Println("File already exists, will not collect a copy")
+		if err != nil {
+			log.Println("Error occured in GetFile:", err)
+		}
  		return
 	}
 
@@ -60,6 +63,7 @@ func GetFile(purgeInfo d7024e.PurgeInformation, ip string){
 func DeleteFile(path string){
 	err := os.Remove(path)
 	if err != nil {
-		log.Println(err)
+		log.Println("Error in DeleteFile: ", err)
+		log.Println("The specified path in DeleteFile is: ", path)
 	}
 }

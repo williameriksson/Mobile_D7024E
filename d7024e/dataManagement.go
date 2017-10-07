@@ -47,7 +47,7 @@ func (kademlia *Kademlia) RepublishData() {
 // if sorting mechanism is implemented
 func (kademlia *Kademlia) PurgeData() {
 
-  for key, purgeInfo := range kademlia.Datainfo.PurgeInfos {
+  for _, purgeInfo := range kademlia.Datainfo.PurgeInfos {
     if !purgeInfo.Pinned && time.Now().After(purgeInfo.PurgeTimeStamp){
       select {
       case kademlia.ServerChannel <- NewHandle(CMD_REMOVE_FILE, purgeInfo, ""):
@@ -55,7 +55,7 @@ func (kademlia *Kademlia) PurgeData() {
         fmt.Println("Could not purge the data, handler did not read the channel")
       }
       delete(kademlia.files, purgeInfo.Key)
-      delete(kademlia.Datainfo.PurgeInfos, key)
+      delete(kademlia.Datainfo.PurgeInfos, purgeInfo.Key)
     }
   }
   time.AfterFunc(PURGE_INTERVAL, kademlia.PurgeData)

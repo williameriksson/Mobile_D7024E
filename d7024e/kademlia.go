@@ -63,7 +63,7 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 	kademlia.Network = Network{me: &kademlia.RoutingTable.me, MsgChannel: make(chan Message), TestChannel: make(chan string, 100)}
 	// kademlia.Network.TestChannel <- ("My ID : " + myID.String())
 
-	go kademlia.RepublishMyData()
+	//go kademlia.RepublishMyData()
 	go kademlia.RepublishData()
 	go kademlia.PurgeData()
 	conn := kademlia.Network.Listen(myIP)
@@ -265,7 +265,9 @@ func (kademlia *Kademlia) Get(hash string) string {
 
 func (kademlia *Kademlia) Store(purgeInfo PurgeInformation, path string, me bool) {
 	//hash := HashStr(fileName)
+	fmt.Println("IN KADEMLIA STORE, purgeInfo = ", purgeInfo)
 	kademlia.files[purgeInfo.Key] = path
+	fmt.Println("IN KADEMLIA STORE, kademlia.files[purgeInfo.Key]", kademlia.files[purgeInfo.Key])
 
 	// If the file belongs to this node originally
 	if me {
