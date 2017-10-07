@@ -263,11 +263,16 @@ func (kademlia *Kademlia) Get(hash string) string {
 	return kademlia.files[hash]
 }
 
+func (kademlia *Kademlia) PrintFilesMap() {
+	fmt.Println("PRINTING THE KADEMLIA FILES MAP:")
+	for key, value := range kademlia.files {
+		fmt.Println("Key: ", key, " Value: ", value)
+	}
+}
+
 func (kademlia *Kademlia) Store(purgeInfo PurgeInformation, path string, me bool) {
 	//hash := HashStr(fileName)
-	fmt.Println("IN KADEMLIA STORE, purgeInfo = ", purgeInfo)
 	kademlia.files[purgeInfo.Key] = path
-	fmt.Println("IN KADEMLIA STORE, kademlia.files[purgeInfo.Key]", kademlia.files[purgeInfo.Key])
 
 	// If the file belongs to this node originally
 	if me {

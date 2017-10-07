@@ -60,7 +60,7 @@ func GetFile(purgeInfo d7024e.PurgeInformation, ip string){
     kademlia.Store(purgeInfo, path, false)
 }
 
-func DeleteFile(path string){
+func DeleteFile(path string) {
 	err := os.Remove(path)
 	if err != nil {
 		log.Println("Error in DeleteFile: ", err)
