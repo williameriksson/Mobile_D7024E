@@ -6,32 +6,41 @@ import (
     "github.com/gorilla/mux"
     "Mobile_D7024E/d7024e"
     "os"
+    "path/filepath"
     "time"
 )
 
 //const addr string = ":8080"
-var default_dir string = "C:/Users/A1201-admin/go/src/Mobile_D7024E/files/"
+var default_dir string //= "C:/Users/David/go/src/Mobile_D7024E/files/"
 var kademlia *d7024e.Kademlia
 var res chan string
+
+const files_dir string = "files"
 
 func StartServer(kad *d7024e.Kademlia) {
     res = make(chan string)
     kademlia = kad
-    default_dir = default_dir + kademlia.RoutingTable.GetMyID() + "/"
+
+    default_dir, err := filepath.Abs("..")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    default_dir = filepath.Join(default_dir, files_dir, kademlia.RoutingTable.GetMyID())
+    log.Println("Kademlia directory: " + default_dir)
 
     myIP := kademlia.RoutingTable.GetMyIP()
     myIP = convertIP(myIP)
     myPort := myIP[len(myIP) - 5 :]
 
 
-    if _, err := os.Stat(default_dir); os.IsNotExist(err) {
+    if _, err = os.Stat(default_dir); os.IsNotExist(err) {
         mk := os.Mkdir(default_dir, os.ModePerm)
         if mk != nil {
             log.Fatal(mk)
         }
     }
 
-    log.Print(default_dir)
     router := mux.NewRouter().StrictSlash(true)
 
     for _, route := range routes {
