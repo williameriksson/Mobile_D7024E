@@ -80,7 +80,7 @@ func Store(w http.ResponseWriter, r *http.Request) {
 		filename = strings.ToLower(filename)
 		hash := HashStr(filename)
 		newPurgeInfo := d7024e.PurgeInformation{Key: hash, Pinned: false, TimeToLive:d7024e.TTL}
-		kademlia.PublishData(newPurgeInfo, path)
+		kademlia.PublishData(newPurgeInfo, path, true)
 		log.Println("handlers.go Store(): path = " + path)
 		fmt.Fprint(w, hash)
 	} else{
@@ -132,10 +132,12 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
 	// Create the file
 	out, err := os.Open(fp)
-	if err != nil  {
-		log.Fatal(err)
-	}
 	defer out.Close()
+	if err != nil  {
+		log.Println(err)
+		return
+	}
+
 
 	// Writer the body to file
 	_, err = io.Copy(w, out)

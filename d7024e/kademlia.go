@@ -38,6 +38,7 @@ func NewKademlia() *Kademlia {
 	kademlia.ServerChannel = make(chan Handle)
 	kademlia.foundHashes = make(map[string]Node)
 	kademlia.Datainfo.PurgeInfos = make(map[string]PurgeInformation)
+	kademlia.Datainfo.MyKeys = make(map[string]bool)
 	return &kademlia
 }
 
@@ -63,7 +64,7 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 	kademlia.Network = Network{me: &kademlia.RoutingTable.me, MsgChannel: make(chan Message), TestChannel: make(chan string, 100)}
 	// kademlia.Network.TestChannel <- ("My ID : " + myID.String())
 
-	//go kademlia.RepublishMyData()
+	go kademlia.RepublishMyData()
 	go kademlia.RepublishData()
 	go kademlia.PurgeData()
 	conn := kademlia.Network.Listen(myIP)
@@ -249,14 +250,19 @@ func (kademlia *Kademlia) CheckAlive(nodesToCheck []Node) {
 	time.After(timeOutTime)
 }
 
-func (kademlia *Kademlia) PublishData(purgeInfo PurgeInformation, path string) {
+func (kademlia *Kademlia) PublishData(purgeInfo PurgeInformation, path string, myFile bool) {
+
+	if purgeInfo.Key == "" {
+		fmt.Println("In PublishData: Tried to publish empty hash")
+		return
+	}
 
 	closestNodes := kademlia.RoutingTable.FindClosestNodes(NewKademliaID(purgeInfo.Key), k)
 	for i := 0; i < len(closestNodes); i++ {
 		marshPurgeInfo, _ := json.Marshal(purgeInfo)
 		kademlia.Network.SendStoreMessage(&closestNodes[i], marshPurgeInfo)
 	}
-	kademlia.Store(purgeInfo, path, true)
+	kademlia.Store(purgeInfo, path, myFile)
 }
 
 func (kademlia *Kademlia) Get(hash string) string {
@@ -272,27 +278,38 @@ func (kademlia *Kademlia) PrintFilesMap() {
 
 func (kademlia *Kademlia) Store(purgeInfo PurgeInformation, path string, me bool) {
 	//hash := HashStr(fileName)
-	kademlia.files[purgeInfo.Key] = path
+	if existingPI, exists := kademlia.Datainfo.PurgeInfos[purgeInfo.Key]; exists {
+		fmt.Println("\n YES IT DOES ALREADY EXIST, TIME TO LIVE: ", purgeInfo.TimeToLive, "\n")
+		existingPI.TimeToLive = purgeInfo.TimeToLive
+		kademlia.SetPurgeStamp(&existingPI)
+		kademlia.Datainfo.PurgeInfos[purgeInfo.Key] = existingPI
+	} else {
+		fmt.Println("\n NO IT DOES NOT EXIST, TIME TO LIVE: ", purgeInfo.TimeToLive, "\n")
+		kademlia.files[purgeInfo.Key] = path
+		kademlia.SetPurgeStamp(&purgeInfo)
+		kademlia.Datainfo.PurgeInfos[purgeInfo.Key] = purgeInfo
+	}
+
 
 	// If the file belongs to this node originally
 	if me {
-		for _, myKey := range kademlia.Datainfo.MyKeys {
-			if myKey == purgeInfo.Key {
-				return
-			}
+		// Check if the key is already added to myKeys map
+		if kademlia.Datainfo.MyKeys[purgeInfo.Key] {
+			return
 		}
-		kademlia.Datainfo.MyKeys = append(kademlia.Datainfo.MyKeys, purgeInfo.Key)
+		kademlia.Datainfo.PurgeInfos[purgeInfo.Key] = purgeInfo
+		kademlia.Datainfo.MyKeys[purgeInfo.Key] = true
 		return
 	}
 
 	// If the purgeinformation already exists, update the purgestamp
-	if val, exists := kademlia.Datainfo.PurgeInfos[purgeInfo.Key]; exists {
-		kademlia.SetPurgeStamp(&val)
-		return
-	}
-
-	kademlia.SetPurgeStamp(&purgeInfo)
-	kademlia.Datainfo.PurgeInfos[purgeInfo.Key] = purgeInfo
+	// if val, exists := kademlia.Datainfo.PurgeInfos[purgeInfo.Key]; exists {
+	// 	kademlia.SetPurgeStamp(&val)
+	// 	return
+	// }
+	//
+	// kademlia.SetPurgeStamp(&purgeInfo)
+	// kademlia.Datainfo.PurgeInfos[purgeInfo.Key] = purgeInfo
 
 }
 
