@@ -6,13 +6,14 @@ import (
 	"log"
 	"net/http"
 	"io"
-	//"path/filepath"
+	"path/filepath"
 	"mime"
 	"Mobile_D7024E/d7024e"
 )
 
 func GetFile(purgeInfo d7024e.PurgeInformation, ip string){
 	log.Println("GetFile()")
+	log.Println("default_dir = " + default_dir)
 
 	url := "http://"+ip+"/download/"+purgeInfo.Key
 	log.Println("     url: " + url)
@@ -25,28 +26,32 @@ func GetFile(purgeInfo d7024e.PurgeInformation, ip string){
 	content := resp.Header.Get("Content-Disposition")
 	_, params, err := mime.ParseMediaType(content)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("mime parse error: ", err)
 	}
 	filename := params["filename"]
-	path := default_dir + filename
+
+	log.Println("default_dir = " + default_dir)
+	path := filepath.Join(default_dir, filename)
+
+	log.Println("path = " + path)
 
 	// If file already exists: return
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
- 		log.Println(err)
+ 		log.Println("File already exists error: ", err)
  		return
 	}
 
 
 	out, err := os.Create(path)
 	if err != nil  {
-		log.Fatal(err)
+		log.Fatal("Create path error: ", err)
 	}
 	defer out.Close()
 
 	_, err = io.Copy(out, resp.Body)
 	defer resp.Body.Close()
 	if err != nil {
-    	log.Fatal(err)
+    	log.Fatal("io.Copy error: ", err)
 	}
     fmt.Println("Downloaded to "+path)
     kademlia.Store(purgeInfo, path, false)

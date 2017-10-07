@@ -21,7 +21,9 @@ func StartServer(kad *d7024e.Kademlia) {
     res = make(chan string)
     kademlia = kad
 
-    default_dir, err := filepath.Abs("..")
+    var err error
+
+    default_dir, err = filepath.Abs("..")
     if err != nil {
         log.Fatal(err)
     }
@@ -35,7 +37,7 @@ func StartServer(kad *d7024e.Kademlia) {
 
 
     if _, err = os.Stat(default_dir); os.IsNotExist(err) {
-        mk := os.Mkdir(default_dir, os.ModePerm)
+        mk := os.MkdirAll(default_dir, os.ModePerm)
         if mk != nil {
             log.Fatal(mk)
         }
