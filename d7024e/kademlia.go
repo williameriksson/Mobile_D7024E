@@ -148,7 +148,7 @@ func (kademlia *Kademlia) channelReader() {
 			select {
 			case kademlia.ServerChannel <- NewHandle(CMD_RETRIEVE_FILE, purgeInfo, msg.SenderNode.Address):
 				fmt.Println("Sent message to server to get a file")
-			default:
+			case <-time.After(time.Second * 1):
 				fmt.Println("Could not deliver retrieve message to server, not listening")
 			}
 			//QUESTION: Should server handle the below store or kademlia?
@@ -191,7 +191,7 @@ func (kademlia *Kademlia) channelReader() {
 			select {
 			case kademlia.ServerChannel <- NewHandle(CMD_FOUND_FILE, PurgeInformation{Key:string(msg.Data)}, msg.SenderNode.Address):
 				fmt.Println("Msg delivered to server")
-			default:
+			case <-time.After(time.Second * 1):
 				fmt.Println("Msg could not be delivered to server, server not listening..")
 			}
 
