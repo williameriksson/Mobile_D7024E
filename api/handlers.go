@@ -36,14 +36,14 @@ func Cat(w http.ResponseWriter, r *http.Request) {
 	defer out.Close()
 	if err != nil  {
 		log.Println("I don't have file: ", err)
-		
+
 		// Search Kademlia Network for file
 		go kademlia.LookupValue(hash)
 
 		var ip string
 
 		select {
-		
+
 		// Wait on response from kademlia
 		case ip = <- res:
 		// Timeout
@@ -52,7 +52,7 @@ func Cat(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, "Error, Timeout in Cat() function.")
 			return
 		}
-		
+
 		// Change from kademlia port to API port
 		ip = convertIP(ip)
 
@@ -70,7 +70,7 @@ func Cat(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 	}
-	
+
 }
 
 func Store(w http.ResponseWriter, r *http.Request) {
@@ -79,13 +79,14 @@ func Store(w http.ResponseWriter, r *http.Request) {
 		filename := filepath.Base(path)
 		filename = strings.ToLower(filename)
 		hash := HashStr(filename)
-		kademlia.PublishData(hash, path)
+		newPurgeInfo := d7024e.PurgeInformation{Key: hash, Pinned: false, TimeToLive:d7024e.TTL}
+		kademlia.PublishData(newPurgeInfo, path)
 		log.Println("handlers.go Store(): path = " + path)
 		fmt.Fprint(w, hash)
 	} else{
 		fmt.Fprintln(w, "Localhost only.")
 	}
-}	
+}
 
 func Pin(w http.ResponseWriter, r *http.Request) {
 	if isLocalHost(r){

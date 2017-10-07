@@ -6,7 +6,6 @@ import (
     "github.com/gorilla/mux"
     "Mobile_D7024E/d7024e"
     "os"
-    "Mobile_D7024E/common"
     "time"
 )
 
@@ -52,7 +51,7 @@ func StartServer(kad *d7024e.Kademlia) {
         for {
             handle := <-kademlia.ServerChannel
             switch handle.Command {
-                case common.CMD_FOUND_FILE:
+            case d7024e.CMD_FOUND_FILE:
                     log.Println("CMD_FOUND_FILE")
                     select {
                       case  res <- handle.Ip:
@@ -60,10 +59,10 @@ func StartServer(kad *d7024e.Kademlia) {
                         log.Println("Handler did not listen, timeout")
                     }
 
-                case common.CMD_RETRIEVE_FILE:
+                case d7024e.CMD_RETRIEVE_FILE:
                     log.Println("CMD_RETRIEVE_FILE")
-                    GetFile(handle.Hash, convertIP(handle.Ip))
-                case common.CMD_REMOVE_FILE:
+                    GetFile(handle.PurgeInfo, convertIP(handle.Ip))
+                case d7024e.CMD_REMOVE_FILE:
                     log.Println("CMD_REMOVE_FILE")
                     DeleteFile(handle.Ip)
                 default:

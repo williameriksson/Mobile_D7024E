@@ -8,12 +8,13 @@ import (
 	"io"
 	//"path/filepath"
 	"mime"
+	"Mobile_D7024E/d7024e"
 )
 
-func GetFile(hash string, ip string){
+func GetFile(purgeInfo d7024e.PurgeInformation, ip string){
 	log.Println("GetFile()")
 
-	url := "http://"+ip+"/download/"+hash
+	url := "http://"+ip+"/download/"+purgeInfo.Key
 	log.Println("     url: " + url)
 
 	resp, err := http.Get(url)
@@ -48,7 +49,7 @@ func GetFile(hash string, ip string){
     	log.Fatal(err)
 	}
     fmt.Println("Downloaded to "+path)
-    kademlia.Store(hash, path, false)
+    kademlia.Store(purgeInfo, path, false)
 }
 
 func DeleteFile(path string){

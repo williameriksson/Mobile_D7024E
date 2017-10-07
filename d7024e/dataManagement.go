@@ -1,32 +1,45 @@
 package d7024e
 
 import (
-  "Mobile_D7024E/common"
   "time"
   "fmt"
 )
 
 const (
-  REPUBLISHINTERVAL time.Duration = time.Duration(20)*time.Second
-  PURGEINTERVAL time.Duration = time.Duration(10)*time.Second
+  TTL time.Duration = time.Duration(40)*time.Second
+  REPUBLISH_MY_FILES_INTERVAL time.Duration = time.Duration(20)*time.Second
+  REPUBLISH_INTERVAL time.Duration = time.Duration(20)*time.Second
+  PURGE_INTERVAL time.Duration = time.Duration(10)*time.Second
 )
 
 type PurgeInformation struct {
   Key             string
   Pinned          bool
   PurgeTimeStamp  time.Time
+  TimeToLive      time.Duration
 }
 
 type DataInformation struct {
   MyKeys       []string
-  PurgeInfos   []PurgeInformation
+  PurgeInfos   map[string]PurgeInformation
+}
+
+func (kademlia *Kademlia) RepublishMyData() {
+  for _, myKey := range kademlia.Datainfo.MyKeys {
+    tmp := kademlia.Datainfo.PurgeInfos[myKey]
+    tmp.TimeToLive = TTL
+    kademlia.Datainfo.PurgeInfos[myKey] = tmp
+    kademlia.PublishData(kademlia.Datainfo.PurgeInfos[myKey], kademlia.files[myKey])
+  }
+  time.AfterFunc(REPUBLISH_MY_FILES_INTERVAL, kademlia.RepublishMyData)
 }
 
 func (kademlia *Kademlia) RepublishData() {
-  for _, myKey := range kademlia.Datainfo.MyKeys {
-    kademlia.PublishData(myKey, kademlia.files[myKey])
+  for key, purgeInfo := range kademlia.Datainfo.PurgeInfos {
+    purgeInfo.TimeToLive = purgeInfo.PurgeTimeStamp.Sub(time.Now())
+    kademlia.PublishData(purgeInfo, kademlia.files[key])
   }
-  time.AfterFunc(REPUBLISHINTERVAL, kademlia.RepublishData)
+  time.AfterFunc(REPUBLISH_INTERVAL, kademlia.RepublishData)
 }
 
 
@@ -34,22 +47,21 @@ func (kademlia *Kademlia) RepublishData() {
 // if sorting mechanism is implemented
 func (kademlia *Kademlia) PurgeData() {
 
-  for index, purgeInfo := range kademlia.Datainfo.PurgeInfos {
+  for key, purgeInfo := range kademlia.Datainfo.PurgeInfos {
     if !purgeInfo.Pinned && time.Now().After(purgeInfo.PurgeTimeStamp){
       select {
-      case kademlia.ServerChannel <- common.NewHandle(common.CMD_REMOVE_FILE, "", kademlia.files[purgeInfo.Key]):
+      case kademlia.ServerChannel <- NewHandle(CMD_REMOVE_FILE, purgeInfo, ""):
       case <-time.After(time.Millisecond * 50):
         fmt.Println("Could not purge the data, handler did not read the channel")
       }
       delete(kademlia.files, purgeInfo.Key)
-      kademlia.Datainfo.PurgeInfos = append(kademlia.Datainfo.PurgeInfos[:index], kademlia.Datainfo.PurgeInfos[index + 1:]...)
+      delete(kademlia.Datainfo.PurgeInfos, key)
     }
   }
-  time.AfterFunc(PURGEINTERVAL, kademlia.PurgeData)
+  time.AfterFunc(PURGE_INTERVAL, kademlia.PurgeData)
 
 }
 
 func (kademlia *Kademlia) SetPurgeStamp(purgeInfo *PurgeInformation) {
-  duration := REPUBLISHINTERVAL * 2
-  purgeInfo.PurgeTimeStamp = time.Now().Add(duration)
+  purgeInfo.PurgeTimeStamp = time.Now().Add(purgeInfo.TimeToLive)
 }

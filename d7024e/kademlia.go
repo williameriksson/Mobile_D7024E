@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	//"strconv"
-	"Mobile_D7024E/common"
 	"time"
 )
 
@@ -26,7 +25,7 @@ type Kademlia struct {
 	pingedNodes        map[Node]bool
 	timeoutChannel     chan bool
 	valueTimeoutChan   chan bool
-	ServerChannel      chan common.Handle
+	ServerChannel      chan Handle
 }
 
 // Constructor
@@ -36,8 +35,9 @@ func NewKademlia() *Kademlia {
 	kademlia.pingedNodes = make(map[Node]bool)
 	kademlia.timeoutChannel = make(chan bool)
 	kademlia.valueTimeoutChan = make(chan bool)
-	kademlia.ServerChannel = make(chan common.Handle)
+	kademlia.ServerChannel = make(chan Handle)
 	kademlia.foundHashes = make(map[string]Node)
+	kademlia.Datainfo.PurgeInfos = make(map[string]PurgeInformation)
 	return &kademlia
 }
 
@@ -63,6 +63,7 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 	kademlia.Network = Network{me: &kademlia.RoutingTable.me, MsgChannel: make(chan Message), TestChannel: make(chan string, 100)}
 	// kademlia.Network.TestChannel <- ("My ID : " + myID.String())
 
+	go kademlia.RepublishMyData()
 	go kademlia.RepublishData()
 	go kademlia.PurgeData()
 	conn := kademlia.Network.Listen(myIP)
@@ -138,9 +139,13 @@ func (kademlia *Kademlia) channelReader() {
 
 		case cmd_store:
 			fmt.Println("GOT " + cmd_store)
+			var purgeInfo PurgeInformation
+			err := json.Unmarshal(msg.Data, &purgeInfo)
+			checkError(err)
+
 			// TODO: Add call to own server to establish tcp conn and get the actual file
 			select {
-			case kademlia.ServerChannel <- common.NewHandle(common.CMD_RETRIEVE_FILE, string(msg.Data), msg.SenderNode.Address):
+			case kademlia.ServerChannel <- NewHandle(CMD_RETRIEVE_FILE, purgeInfo, msg.SenderNode.Address):
 				fmt.Println("Sent message to server to get a file")
 			default:
 				fmt.Println("Could not deliver retrieve message to server, not listening")
@@ -183,7 +188,7 @@ func (kademlia *Kademlia) channelReader() {
 			fmt.Println("Found a node that holds the file!")
 			//Some node has returned the value that THIS node requested
 			select {
-			case kademlia.ServerChannel <- common.NewHandle(common.CMD_FOUND_FILE, string(msg.Data), msg.SenderNode.Address):
+			case kademlia.ServerChannel <- NewHandle(CMD_FOUND_FILE, PurgeInformation{Key:string(msg.Data)}, msg.SenderNode.Address):
 				fmt.Println("Msg delivered to server")
 			default:
 				fmt.Println("Msg could not be delivered to server, server not listening..")
@@ -244,44 +249,43 @@ func (kademlia *Kademlia) CheckAlive(nodesToCheck []Node) {
 	time.After(timeOutTime)
 }
 
-func (kademlia *Kademlia) PublishData(hash string, path string) {
+func (kademlia *Kademlia) PublishData(purgeInfo PurgeInformation, path string) {
 
-	closestNodes := kademlia.RoutingTable.FindClosestNodes(NewKademliaID(hash), k)
+	closestNodes := kademlia.RoutingTable.FindClosestNodes(NewKademliaID(purgeInfo.Key), k)
 	for i := 0; i < len(closestNodes); i++ {
-		kademlia.Network.SendStoreMessage(&closestNodes[i], []byte(hash))
+		marshPurgeInfo, _ := json.Marshal(purgeInfo)
+		kademlia.Network.SendStoreMessage(&closestNodes[i], marshPurgeInfo)
 	}
-	kademlia.Store(hash, path, true)
+	kademlia.Store(purgeInfo, path, true)
 }
 
 func (kademlia *Kademlia) Get(hash string) string {
 	return kademlia.files[hash]
 }
 
-func (kademlia *Kademlia) Store(hash string, path string, me bool) {
+func (kademlia *Kademlia) Store(purgeInfo PurgeInformation, path string, me bool) {
 	//hash := HashStr(fileName)
-	kademlia.files[hash] = path
+	kademlia.files[purgeInfo.Key] = path
 
+	// If the file belongs to this node originally
 	if me {
 		for _, myKey := range kademlia.Datainfo.MyKeys {
-			if myKey == hash {
+			if myKey == purgeInfo.Key {
 				return
 			}
 		}
-		kademlia.Datainfo.MyKeys = append(kademlia.Datainfo.MyKeys, hash)
+		kademlia.Datainfo.MyKeys = append(kademlia.Datainfo.MyKeys, purgeInfo.Key)
 		return
 	}
 
-	for _, purgeInfo := range kademlia.Datainfo.PurgeInfos {
-		if purgeInfo.Key == hash {
-			kademlia.SetPurgeStamp(&purgeInfo)
-			return
-		}
+	// If the purgeinformation already exists, update the purgestamp
+	if val, exists := kademlia.Datainfo.PurgeInfos[purgeInfo.Key]; exists {
+		kademlia.SetPurgeStamp(&val)
+		return
 	}
 
-	newPurgeInfo := PurgeInformation{Key: hash, Pinned: false}
-	kademlia.SetPurgeStamp(&newPurgeInfo)
-	kademlia.Datainfo.PurgeInfos = append(kademlia.Datainfo.PurgeInfos, newPurgeInfo)
-	// TODO: Here we should probably call the server to collect the actual file.
+	kademlia.SetPurgeStamp(&purgeInfo)
+	kademlia.Datainfo.PurgeInfos[purgeInfo.Key] = purgeInfo
 
 }
 

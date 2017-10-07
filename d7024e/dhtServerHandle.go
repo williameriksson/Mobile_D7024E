@@ -1,4 +1,4 @@
-package common
+package d7024e
 
 const (
   CMD_FOUND_FILE = "FOUND_FILE"
@@ -8,10 +8,10 @@ const (
 
 type Handle struct {
   Command string
-  Hash  string
+  PurgeInfo  PurgeInformation
   Ip    string
 }
 
-func NewHandle(cmd string, hash string, ip string) Handle {
-  return Handle{cmd, hash, ip}
+func NewHandle(cmd string, purgeInfo PurgeInformation, ip string) Handle {
+  return Handle{cmd, purgeInfo, ip}
 }
