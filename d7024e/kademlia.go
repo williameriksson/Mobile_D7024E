@@ -276,11 +276,26 @@ func (kademlia *Kademlia) PrintFilesMap() {
 	}
 }
 
+func (kademlia *Kademlia) Pin(hash string) {
+	tmp := kademlia.Datainfo.PurgeInfos[hash]
+	tmp.Pinned = true
+	kademlia.Datainfo.PurgeInfos[hash] = tmp
+	kademlia.RepublishMyDataOnce()
+}
+
+func (kademlia *Kademlia) UnPin(hash string) {
+	tmp := kademlia.Datainfo.PurgeInfos[hash]
+	tmp.Pinned = false
+	kademlia.Datainfo.PurgeInfos[hash] = tmp
+	kademlia.RepublishMyDataOnce()
+}
+
 func (kademlia *Kademlia) Store(purgeInfo PurgeInformation, path string, me bool) {
 	//hash := HashStr(fileName)
 	if existingPI, exists := kademlia.Datainfo.PurgeInfos[purgeInfo.Key]; exists {
-		fmt.Println("\n YES IT DOES ALREADY EXIST, TIME TO LIVE: ", purgeInfo.TimeToLive, "\n")
+		fmt.Println("\n YES IT DOES ALREADY EXIST, TIME TO LIVE: ", purgeInfo.TimeToLive, "Pinned: ", purgeInfo.Pinned, "\n")
 		existingPI.TimeToLive = purgeInfo.TimeToLive
+		existingPI.Pinned = purgeInfo.Pinned
 		kademlia.SetPurgeStamp(&existingPI)
 		kademlia.Datainfo.PurgeInfos[purgeInfo.Key] = existingPI
 	} else {

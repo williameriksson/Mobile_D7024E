@@ -24,7 +24,7 @@ type DataInformation struct {
   PurgeInfos   map[string]PurgeInformation
 }
 
-func (kademlia *Kademlia) RepublishMyData() {
+func (kademlia *Kademlia) RepublishMyDataOnce() {
   for myKey, _ := range kademlia.Datainfo.MyKeys {
     if myKey == "" {
       delete(kademlia.Datainfo.MyKeys, myKey)
@@ -38,6 +38,10 @@ func (kademlia *Kademlia) RepublishMyData() {
     fmt.Println("")
     kademlia.PublishData(kademlia.Datainfo.PurgeInfos[myKey], kademlia.files[myKey], true)
   }
+}
+
+func (kademlia *Kademlia) RepublishMyData() {
+  kademlia.RepublishMyDataOnce()
   time.AfterFunc(REPUBLISH_MY_FILES_INTERVAL, kademlia.RepublishMyData)
 }
 
