@@ -97,11 +97,11 @@ func TestKademlia(t *testing.T) {
 
 func TestPingTimeout(t *testing.T) {
 	kademlia1 := d7024e.NewKademlia()
-	go kademlia1.Run("", "127.0.0.1:8000")
+	go kademlia1.Run("", "127.0.0.1:9000")
 	time.Sleep(time.Millisecond * 100)
 
 	kademlia2 := d7024e.NewKademlia()
-	go kademlia2.Run("127.0.0.1:8000", "127.0.0.1:8001")
+	go kademlia2.Run("127.0.0.1:9000", "127.0.0.1:9001")
 	time.Sleep(time.Millisecond * 100)
 
 	kad1rtNodes := kademlia1.RoutingTable.FindClosestNodes(d7024e.NewKademliaID("0000000000000000000000000000000000000000"), 20)

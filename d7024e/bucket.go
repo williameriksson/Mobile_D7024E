@@ -16,7 +16,7 @@ func NewBucket() *bucket {
 	return bucket
 }
 
-func (bucket *bucket) AddNode(node Node) {
+func (bucket *bucket) AddNode(node Node) bool {
 	var element *list.Element
 	for e := bucket.list.Front(); e != nil; e = e.Next() {
 		nodeID := e.Value.(Node).ID
@@ -30,11 +30,13 @@ func (bucket *bucket) AddNode(node Node) {
 	if element == nil {
 		if bucket.list.Len() < bucketSize {
 			bucket.list.PushFront(node)
-			//fmt.Printf("PUSHING FRONT: 0x%X\n", node.ID)
+		} else {
+			return false //the bucket is full and new node cannot be inserted
 		}
 	} else {
 		bucket.list.MoveToFront(element)
 	}
+	return true //either new node inserted or old node moved forward
 }
 
 func (bucket *bucket) RemoveNode(node *Node) {

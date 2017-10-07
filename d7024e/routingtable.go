@@ -1,9 +1,6 @@
 package d7024e
 
 import (
-	"encoding/hex"
-	"fmt"
-	"strconv"
 	"time"
 )
 
@@ -37,11 +34,11 @@ func (routingTable *RoutingTable) AddNode(node Node) {
 	if !node.ID.Equals(&routingTable.me.ID) {
 		bucketIndex := routingTable.GetBucketIndex(&node.ID)
 		bucket := routingTable.buckets[bucketIndex]
-		//check if buckets are full (i.e k amount of nodes)
-		if routingTable.GetBucketSize(bucketIndex) >= k {
-			go routingTable.addNodeFullBucket(node)
+		if bucket.AddNode(node) {
+			//a new node was added or old node updated. all is fine
 		} else {
-			bucket.AddNode(node)
+			//a new node was denied due to full bucket, check the bucket!
+			go routingTable.addNodeFullBucket(node)
 		}
 	}
 }
@@ -50,15 +47,17 @@ func (routingTable *RoutingTable) AddNode(node Node) {
 func (routingTable *RoutingTable) addNodeFullBucket(node Node) {
 	bucketIndex := routingTable.GetBucketIndex(&node.ID)
 	bucket := routingTable.buckets[bucketIndex]
-	bucket.AddToQueue(&node)
+	bucket.AddToQueue(&node) //adds the new node to the "waitqueue"
 
-	nodes := bucket.GetNodelist()
-	routingTable.CheckAlive(nodes)
+	leastNode := []Node{bucket.list.Back().Value.(Node)} //the least recently seen node.
+	routingTable.CheckAlive(leastNode)
 
-	for routingTable.GetBucketSize(bucketIndex) < k && bucket.queue.Len() != 0 {
-		//at least one node was removed from bucket in question
-		bucket.AddNode(bucket.PopQueue())
+	bucket.PopQueue()
+	newNode := bucket.PopQueue()
+	if bucket.Len() < k {
+		bucket.AddNode(newNode)
 	}
+	//at least one node was removed from bucket in question
 }
 
 func (routingTable *RoutingTable) RemoveNode(node *Node) {
@@ -137,7 +136,7 @@ func (routingTable *RoutingTable) CheckAlive(nodesToCheck []Node) {
 	routingTable.PingNodes(nodesToCheck)
 	// time.After(timeOutTime)
 	time.Sleep(timeOutTime) //wait for returns
-	fmt.Println("nodes to check " + strconv.Itoa(len(nodesToCheck)))
+	// fmt.Println("nodes to check " + strconv.Itoa(len(nodesToCheck)))
 	for i := 0; i < len(nodesToCheck); i++ {
 		if routingTable.pingedNodes[nodesToCheck[i].ID] == false {
 			routingTable.RemoveNode(&nodesToCheck[i])
@@ -157,22 +156,40 @@ func (routingTable *RoutingTable) GetBucketIndex(id *KademliaID) int {
 	return IDLength*8 - 1
 }
 
+// func (routingTable *RoutingTable) GetRandomIDInBucket(bucketIndex int) *KademliaID {
+// 	kek := routingTable.me.ID.String()
+// 	meData, err := hex.DecodeString(kek)
+// 	checkError(err)
+// 	// fmt.Printf("%X\n", meData)
+// 	mask := meData[(bucketIndex/8)] & (1 << (7 - (uint(bucketIndex) % 8)))
+// 	// fmt.Printf("%d\n", mask)
+// 	if mask == 0 {
+// 		meData[(bucketIndex / 8)] |= (1 << (7 - (uint(bucketIndex) % 8)))
+// 	} else {
+// 		meData[(bucketIndex / 8)] &^= (1 << (7 - (uint(bucketIndex) % 8)))
+// 	}
+//
+// 	str := hex.EncodeToString(meData)
+// 	kdID := NewKademliaID(str)
+// 	return kdID
+// }
+
 func (routingTable *RoutingTable) GetRandomIDInBucket(bucketIndex int) *KademliaID {
-	kek := routingTable.me.ID.String()
-	meData, err := hex.DecodeString(kek)
-	checkError(err)
-	// fmt.Printf("%X\n", meData)
-	mask := meData[(bucketIndex/8)] & (1 << (7 - (uint(bucketIndex) % 8)))
-	// fmt.Printf("%d\n", mask)
-	if mask == 0 {
-		meData[(bucketIndex / 8)] |= (1 << (7 - (uint(bucketIndex) % 8)))
-	} else {
-		meData[(bucketIndex / 8)] &^= (1 << (7 - (uint(bucketIndex) % 8)))
+	myID := routingTable.me.ID
+	randomID := NewRandomKademliaID()
+	finalID := NewKademliaID("0000000000000000000000000000000000000000")
+	for i := 0; i < IDLength; i++ {
+		if i < bucketIndex/8 {
+			finalID[i] = myID[i]
+		} else if i == bucketIndex/8 {
+			finalID[i] = myID[i] ^ (1 << uint(7-(bucketIndex%8)))
+			finalID[i] &= (255 << uint(7-(bucketIndex%8)))
+			finalID[i] |= randomID[i] >> uint(1+bucketIndex%8)
+		} else {
+			finalID[i] = randomID[i]
+		}
 	}
-	// fmt.Printf("%X\n", meData)
-	str := hex.EncodeToString(meData)
-	kdID := NewKademliaID(str)
-	return kdID
+	return finalID
 }
 
 func (routingTable *RoutingTable) GetSize() int {

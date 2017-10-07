@@ -2,6 +2,7 @@ package d7024e_test
 
 import (
 	"Mobile_D7024E/d7024e"
+	"fmt"
 	"strconv"
 	"testing"
 )
@@ -9,6 +10,8 @@ import (
 func TestRoutingTable(t *testing.T) {
 	testNodes := 5
 	myID := d7024e.NewKademliaID("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+	// myID := d7024e.NewKademliaID("00000000000000000000FFFFFFFFFFFFFFFFFFFF")
+	// myID := d7024e.NewRandomKademliaID()
 	rt := d7024e.NewRoutingTable(d7024e.NewNode(myID, "localhost:8000"), nil)
 
 	for i := 1; i <= testNodes; i++ {
@@ -37,6 +40,7 @@ func TestRoutingTable(t *testing.T) {
 		if index != newIndex {
 			t.Error(strconv.Itoa(index) + " != " + strconv.Itoa(newIndex))
 		}
+		// fmt.Println(newIndex, id.String())
 	}
 }
 
@@ -68,5 +72,29 @@ func TestSizeRoutingTable(t *testing.T) {
 }
 
 func TestBucketQueue(t *testing.T) {
+	myNode := d7024e.NewNode(d7024e.NewKademliaID("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"), "localhost:8300")
+	network := d7024e.Network{MsgChannel: make(chan d7024e.Message), TestChannel: make(chan string, 100)}
+	rt := d7024e.NewRoutingTable(myNode, &network)
 
+	port := 8300
+	count := 20
+	for i := 0; i < count; i++ {
+		bucketID := rt.GetRandomIDInBucket(50)
+		randNode := d7024e.NewNode(bucketID, "localhost:"+strconv.Itoa(port))
+		port++
+		rt.AddNode(randNode)
+	}
+	if rt.GetBucketSize(50) != 20 {
+		t.Error("could not insert all nodes!")
+	}
+	//attempt to insert 1 more node into the full bucket
+	bucketID := rt.GetRandomIDInBucket(50)
+	randNode := d7024e.NewNode(bucketID, "localhost:"+strconv.Itoa(port))
+	rt.AddNode(randNode)
+	// time.Sleep(time.Millisecond * 1500)
+	if rt.GetBucketSize(50) != 20 {
+		t.Error("too many nodes in bucket!")
+	}
+	fmt.Println(t.Name(), ": test incomplete")
+	//TODO: figure out why enable time.sleep gives UDP error.
 }
