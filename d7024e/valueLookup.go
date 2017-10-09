@@ -7,23 +7,23 @@ import (
 )
 
 func (kademlia *Kademlia) FindValueReturn(senderNode *Node, nodeList []Node) {
-  kademlia.returnedValueNodes.Append(nodeList)
+	kademlia.returnedValueNodes.Append(nodeList)
 	kademlia.LookupValueCount++
 
 	//adds all the returned nodes to the RoutingTable
 	for i := 0; i < len(nodeList); i++ {
 		kademlia.RoutingTable.AddNode(nodeList[i])
 	}
-  select {
+	select {
 	case kademlia.valueTimeoutChan <- true:
 	default:
 	}
 }
 
 func (kademlia *Kademlia) PrintHashTable() {
-  for key, value := range kademlia.files {
-    fmt.Println("Key:", key, "Value:", value)
-  }
+	for key, value := range kademlia.files {
+		fmt.Println("Key:", key, "Value:", value)
+	}
 }
 
 func (kademlia *Kademlia) FindValue(senderNode *Node, hash *KademliaID) {
@@ -33,12 +33,12 @@ func (kademlia *Kademlia) FindValue(senderNode *Node, hash *KademliaID) {
   }
   fmt.Println("LOOKING FOR THIS HASH: ", strings.TrimSpace(strings.ToLower(hash.String())))
   if val, ok := kademlia.files[strings.TrimSpace(strings.ToLower(hash.String()))]; ok {
-    kademlia.Network.SendReturnDataMessage(senderNode, []byte(hash.String()))
+    kademlia.Network.SendReturnDataMessage(&kademlia.RoutingTable.me, senderNode, []byte(hash.String()))
     fmt.Printf("Yes, the value is %v \n", val)
   } else {
     nodeList := kademlia.RoutingTable.FindClosestNodes(hash, k)
     fmt.Println("DID NOT FIND VALUE, THE NODELIST IS: ", nodeList)
-    kademlia.Network.SendReturnFindDataMessage(senderNode, nodeList)
+    kademlia.Network.SendReturnFindDataMessage(&kademlia.RoutingTable.me, senderNode, nodeList)
   }
 }
 
@@ -46,7 +46,6 @@ func (kademlia *Kademlia) LookupValue(hash string) {
   hashId := NewKademliaID(hash)
   kademlia.lookupValue(hashId, make(map[string]bool), NodeCandidates{}, 0)
 }
-
 
 // If THIS node wants to find a value, it shall call this function. ex:
 // kademlia.LookupValue(hash, make(map[string]bool), NodeCandidates{}, 0)
@@ -61,12 +60,12 @@ func (kademlia *Kademlia) lookupValue(hash *KademliaID, queriedNodes map[string]
 			queriedNodes[hash.String()] = true
       if closestNodes[i].ID != kademlia.RoutingTable.me.ID {
         fmt.Println("!!!!!SENDING THE FIND DATA MESSAGE!!!!!")
-        kademlia.Network.SendFindDataMessage(&closestNodes[i], hash)
+        kademlia.Network.SendFindDataMessage(&kademlia.RoutingTable.me, &closestNodes[i], hash)
       }
 		}
 	}
 
-  timeout := false
+	timeout := false
 	select {
 	case <-kademlia.valueTimeoutChan:
 		timeout = false
@@ -74,17 +73,17 @@ func (kademlia *Kademlia) lookupValue(hash *KademliaID, queriedNodes map[string]
 		timeout = true
 	}
 
-  for i := 0; i < len(kademlia.returnedValueNodes.nodes); i++ {
-    kademlia.returnedValueNodes.nodes[i].CalcDistance(hash)
-  }
-  kademlia.returnedValueNodes.Sort()
+	for i := 0; i < len(kademlia.returnedValueNodes.nodes); i++ {
+		kademlia.returnedValueNodes.nodes[i].CalcDistance(hash)
+	}
+	kademlia.returnedValueNodes.Sort()
 
 	if !timeout {
     if _, exists := kademlia.foundHashes[hash.String()]; exists {
       // We got the value, now we cache it in the closest node to the target that didn't have it
       for _, node := range kademlia.returnedValueNodes.nodes {
           if node.ID != kademlia.foundHashes[hash.String()].ID {
-            kademlia.Network.SendStoreMessage(&kademlia.returnedValueNodes.nodes[0], []byte(hash.String()))
+            kademlia.Network.SendStoreMessage(&kademlia.RoutingTable.me, &kademlia.returnedValueNodes.nodes[0], []byte(hash.String()))
             delete(kademlia.foundHashes, hash.String())
             return
           }

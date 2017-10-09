@@ -1,7 +1,6 @@
 package d7024e
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -10,12 +9,12 @@ func (kademlia *Kademlia) LookupNode(target *KademliaID, queriedNodes map[string
 	kademlia.LookupCount = 0
 	kademlia.returnedNodes = prevBestNodes
 
-	fmt.Println("LookupNode running")
+	// fmt.Println("LookupNode running")
 	closestNodes := kademlia.RoutingTable.FindClosestNodes(target, k)
 	for i := 0; i < alpha && i < len(closestNodes); i++ {
 		if queriedNodes[target.String()] == false {
 			queriedNodes[target.String()] = true
-			kademlia.Network.SendFindNodeMessage(&closestNodes[i], target)
+			kademlia.Network.SendFindNodeMessage(&kademlia.RoutingTable.me, &closestNodes[i], target)
 		}
 	}
 
@@ -28,7 +27,6 @@ func (kademlia *Kademlia) LookupNode(target *KademliaID, queriedNodes map[string
 	}
 
 	if !timeout {
-		// fmt.Println("RETURNEDNODES: ", kademlia.returnedValueNodes)
 		kademlia.returnedNodes.Sort() //what does this do
 		count := kademlia.returnedNodes.Len()
 		if count > k {
@@ -51,11 +49,7 @@ func (kademlia *Kademlia) LookupNode(target *KademliaID, queriedNodes map[string
 
 func (kademlia *Kademlia) findNode(senderNode *Node, kID *KademliaID) {
 	nodeList := kademlia.RoutingTable.FindClosestNodes(kID, k)
-	//fmt.Println("nodelist --")
-	// for i := 0; i < len(nodeList); i++ {
-	// 	fmt.Printf("node : 0x%X\n", nodeList[i].ID)
-	// }
-	kademlia.Network.SendReturnFindNodeMessage(senderNode, nodeList)
+	kademlia.Network.SendReturnFindNodeMessage(&kademlia.RoutingTable.me, senderNode, nodeList)
 }
 
 func (kademlia *Kademlia) findNodeReturn(senderNode *Node, nodeList []Node) {
@@ -64,7 +58,6 @@ func (kademlia *Kademlia) findNodeReturn(senderNode *Node, nodeList []Node) {
 
 	//adds all the returned nodes to the RoutingTable
 	for i := 0; i < len(nodeList); i++ {
-		// kademlia.Network.SendPingMessage(&nodeList[i])
 		kademlia.RoutingTable.AddNode(nodeList[i])
 	}
 	select {
