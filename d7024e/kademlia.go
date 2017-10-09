@@ -59,9 +59,9 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 	//fmt.Printf("ID: 0x%X\n", myID)
 	bootStrapID := NewRandomKademliaID() //20 byte id temp ID (to allow using bootstrap as a node, discarded later)
 	myNode := NewNode(myID, myIP)
-	kademlia.RoutingTable = NewRoutingTable(myNode)
 
-	kademlia.Network = Network{me: &kademlia.RoutingTable.me, MsgChannel: make(chan Message), TestChannel: make(chan string, 100)}
+	kademlia.Network = Network{MsgChannel: make(chan Message), TestChannel: make(chan string, 100)}
+	kademlia.RoutingTable = NewRoutingTable(myNode, &kademlia.Network)
 	// kademlia.Network.TestChannel <- ("My ID : " + myID.String())
 
 	go kademlia.RepublishMyData()
@@ -75,7 +75,7 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 	if bootStrapIP != "" {
 		// fmt.Println("GOT bootstrap ID")
 		bootStrapNode := NewNode(bootStrapID, bootStrapIP)
-		kademlia.Network.SendPingMessage(&bootStrapNode)
+		kademlia.Network.SendPingMessage(&kademlia.RoutingTable.me, &bootStrapNode)
 
 		//Wait for confirmation
 		for {
@@ -96,8 +96,9 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 					err := json.Unmarshal(secondConfirm.Data, &nodeList)
 					checkError(err)
 					kademlia.findNodeReturn(&secondConfirm.SenderNode, nodeList)
-					kademlia.RefreshBuckets()
-					kademlia.PingAllNodes()
+					kademlia.RoutingTable.RefreshBuckets()
+					nodesToPing := kademlia.RoutingTable.FindClosestNodes(&kademlia.RoutingTable.me.ID, kademlia.RoutingTable.GetSize())
+					kademlia.RoutingTable.PingNodes(nodesToPing) //pings all known nodes due to above
 					break
 				}
 
@@ -108,7 +109,6 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 		}
 	}
 	kademlia.channelReader()
-
 }
 
 //the KADEMLIA commands
@@ -133,10 +133,10 @@ func (kademlia *Kademlia) channelReader() {
 		kademlia.RoutingTable.AddNode(msg.SenderNode)
 		switch msg.Command {
 		case cmd_ping_ack:
-			kademlia.pingedNodes[msg.SenderNode] = true //node has returned ping request.
+			kademlia.RoutingTable.pingedNodes[msg.SenderNode.ID] = true //node has returned ping request.
 
 		case cmd_ping:
-			kademlia.Network.SendPingAck(&msg.SenderNode)
+			kademlia.Network.SendPingAck(&kademlia.RoutingTable.me, &msg.SenderNode)
 
 		case cmd_store:
 			fmt.Println("GOT " + cmd_store)
@@ -213,43 +213,6 @@ func (kademlia *Kademlia) channelReader() {
 	}
 }
 
-func (kademlia *Kademlia) RefreshBuckets() {
-	myIndex := kademlia.RoutingTable.GetBucketIndex(&kademlia.RoutingTable.me.ID)
-	//for the buckets less than "me"
-	for i := myIndex; i >= 0; i-- {
-		if kademlia.RoutingTable.buckets[i].Len() < 1 {
-			kadID := kademlia.RoutingTable.GetRandomIDInBucket(i)
-			receiverNode := kademlia.RoutingTable.FindClosestNodes(kadID, 1)
-			kademlia.Network.SendFindNodeMessage(&receiverNode[0], kadID)
-		}
-	}
-	//for the buckets more than "me"
-	for j := myIndex; j < (IDLength * 8); j++ {
-		if kademlia.RoutingTable.buckets[j].Len() < 1 {
-			kadID := kademlia.RoutingTable.GetRandomIDInBucket(j)
-			receiverNode := kademlia.RoutingTable.FindClosestNodes(kadID, 1)
-			kademlia.Network.SendFindNodeMessage(&receiverNode[0], kadID)
-		}
-	}
-}
-
-func (kademlia *Kademlia) PingAllNodes() {
-	nodes := kademlia.RoutingTable.FindClosestNodes(&kademlia.RoutingTable.me.ID, kademlia.RoutingTable.GetSize())
-	for i := 0; i < len(nodes); i++ {
-		kademlia.Network.SendPingMessage(&nodes[i])
-	}
-}
-
-func (kademlia *Kademlia) CheckAlive(nodesToCheck []Node) {
-	nodes := kademlia.RoutingTable.FindClosestNodes(&kademlia.RoutingTable.me.ID, kademlia.RoutingTable.GetSize())
-	for i := 0; i < len(nodes); i++ {
-		kademlia.pingedNodes[nodes[i]] = false //set the node as not returned ping yet
-	}
-	kademlia.PingAllNodes() //pings all the nodes
-	//TODO: add timeout here, upon timeout all NODE:FALSE pairs in pingedNodes map should be removed from RoutingTable.
-	time.After(timeOutTime)
-}
-
 func (kademlia *Kademlia) PublishData(purgeInfo PurgeInformation, path string, myFile bool) {
 
 	if purgeInfo.Key == "" {
@@ -260,7 +223,7 @@ func (kademlia *Kademlia) PublishData(purgeInfo PurgeInformation, path string, m
 	closestNodes := kademlia.RoutingTable.FindClosestNodes(NewKademliaID(purgeInfo.Key), k)
 	for i := 0; i < len(closestNodes); i++ {
 		marshPurgeInfo, _ := json.Marshal(purgeInfo)
-		kademlia.Network.SendStoreMessage(&closestNodes[i], marshPurgeInfo)
+		kademlia.Network.SendStoreMessage(&kademlia.RoutingTable.me, &closestNodes[i], marshPurgeInfo)
 	}
 	kademlia.Store(purgeInfo, path, myFile)
 }

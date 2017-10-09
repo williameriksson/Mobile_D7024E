@@ -91,5 +91,8 @@ func (kademlia *Kademlia) PurgeData() {
 }
 
 func (kademlia *Kademlia) SetPurgeStamp(purgeInfo *PurgeInformation) {
-  purgeInfo.PurgeTimeStamp = time.Now().Add(purgeInfo.TimeToLive)
+  newTimeStamp := time.Now().Add(purgeInfo.TimeToLive)
+  if newTimeStamp.After(purgeInfo.PurgeTimeStamp) {
+    purgeInfo.PurgeTimeStamp = newTimeStamp
+  }
 }

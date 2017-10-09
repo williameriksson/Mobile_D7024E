@@ -40,3 +40,19 @@ func TestRemoveNode(t *testing.T) {
 	}
 	bucket.RemoveNode(&node)
 }
+
+func TestQueue(t *testing.T) {
+	bucket := d7024e.NewBucket()
+	node := d7024e.NewNode(d7024e.NewRandomKademliaID(), "localhost:9000")
+	bucket.AddToQueue(&node)
+	if bucket.QueueLen() != 1 {
+		t.Error("AddToQueue Did not queue element")
+	}
+	nodePopped := bucket.PopQueue()
+	if bucket.QueueLen() != 0 {
+		t.Error("PopQueue Did not remove element")
+	}
+	if nodePopped != node {
+		t.Error("PopQueue Did not return element")
+	}
+}
