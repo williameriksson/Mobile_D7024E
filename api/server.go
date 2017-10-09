@@ -81,7 +81,7 @@ func StartServer(kad *d7024e.Kademlia) {
         }
 
     }()
-    log.Fatal(http.ListenAndServe(myPort, router))
+    log.Println(http.ListenAndServe(myPort, router))
 
 }
 

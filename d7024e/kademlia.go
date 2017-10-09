@@ -6,11 +6,16 @@ import (
 	"io/ioutil"
 	//"strconv"
 	"time"
+	"sync"
 )
 
 const alpha int = 3
 const k int = 20
 const timeOutTime time.Duration = time.Duration(40) * time.Millisecond
+var returnedNodesMutex sync.Mutex
+var lookUpCountMutex sync.Mutex
+var filesMutex sync.Mutex
+var dataInfoMutex sync.Mutex
 
 type Kademlia struct {
 	Network            Network
@@ -202,12 +207,14 @@ func (kademlia *Kademlia) channelReader() {
 		default:
 			fmt.Println("GOT DEFAULT")
 		}
-		tmpString := ""
 
-		for key, value := range kademlia.files {
-			tmpString += "Key: " + key + "Value: " + string(value)
-		}
 
+		// tmpString := ""
+		// filesMutex.Lock()
+		// for key, value := range kademlia.files {
+		// 	tmpString += "Key: " + key + "Value: " + string(value)
+		// }
+		// filesMutex.Lock()
 		// kademlia.WriteToFile(kademlia.RoutingTable.me.ID.String()+".txt", []byte(tmpString))
 		//kademlia.WriteToFile(kademlia.RoutingTable.me.ID.String()+".txt", []byte(kademlia.RoutingTable.GetRoutingTable()))
 	}
@@ -221,6 +228,7 @@ func (kademlia *Kademlia) PublishData(purgeInfo PurgeInformation, path string, m
 	}
 	go kademlia.LookupNode(NewKademliaID(purgeInfo.Key), make(map[string]bool), NodeCandidates{}, 0)
 	closestNodes := kademlia.RoutingTable.FindClosestNodes(NewKademliaID(purgeInfo.Key), k)
+	go kademlia.RoutingTable.CheckAlive(closestNodes)
 	for i := 0; i < len(closestNodes); i++ {
 		marshPurgeInfo, _ := json.Marshal(purgeInfo)
 		kademlia.Network.SendStoreMessage(&kademlia.RoutingTable.me, &closestNodes[i], marshPurgeInfo)
@@ -229,32 +237,42 @@ func (kademlia *Kademlia) PublishData(purgeInfo PurgeInformation, path string, m
 }
 
 func (kademlia *Kademlia) Get(hash string) string {
+	// filesMutex.Lock()
+	// defer filesMutex.Unlock()
 	return kademlia.files[hash]
 }
 
 func (kademlia *Kademlia) PrintFilesMap() {
 	fmt.Println("PRINTING THE KADEMLIA FILES MAP:")
+	filesMutex.Lock()
+	defer filesMutex.Unlock()
 	for key, value := range kademlia.files {
 		fmt.Println("Key: ", key, " Value: ", value)
 	}
 }
 
 func (kademlia *Kademlia) Pin(hash string) {
+	dataInfoMutex.Lock()
 	tmp := kademlia.Datainfo.PurgeInfos[hash]
 	tmp.Pinned = true
 	kademlia.Datainfo.PurgeInfos[hash] = tmp
+	dataInfoMutex.Unlock()
 	kademlia.RepublishMyDataOnce()
 }
 
 func (kademlia *Kademlia) UnPin(hash string) {
+	dataInfoMutex.Lock()
 	tmp := kademlia.Datainfo.PurgeInfos[hash]
 	tmp.Pinned = false
 	kademlia.Datainfo.PurgeInfos[hash] = tmp
+	dataInfoMutex.Unlock()
 	kademlia.RepublishMyDataOnce()
 }
 
 func (kademlia *Kademlia) Store(purgeInfo PurgeInformation, path string, me bool) {
 	//hash := HashStr(fileName)
+	dataInfoMutex.Lock()
+
 	if existingPI, exists := kademlia.Datainfo.PurgeInfos[purgeInfo.Key]; exists {
 		fmt.Println("\n YES IT DOES ALREADY EXIST, TIME TO LIVE: ", purgeInfo.TimeToLive, "Pinned: ", purgeInfo.Pinned, "\n")
 		existingPI.TimeToLive = purgeInfo.TimeToLive
@@ -264,11 +282,14 @@ func (kademlia *Kademlia) Store(purgeInfo PurgeInformation, path string, me bool
 		kademlia.Datainfo.PurgeInfos[purgeInfo.Key] = existingPI
 	} else {
 		fmt.Println("\n NO IT DOES NOT EXIST, TIME TO LIVE: ", purgeInfo.TimeToLive, "\n")
+		filesMutex.Lock()
 		kademlia.files[purgeInfo.Key] = path
+		filesMutex.Unlock()
 		purgeInfo.LastPublished = time.Now()
 		kademlia.SetPurgeStamp(&purgeInfo)
 		kademlia.Datainfo.PurgeInfos[purgeInfo.Key] = purgeInfo
 	}
+	dataInfoMutex.Unlock()
 
 
 	// If the file belongs to this node originally
@@ -281,7 +302,7 @@ func (kademlia *Kademlia) Store(purgeInfo PurgeInformation, path string, me bool
 		kademlia.Datainfo.MyKeys[purgeInfo.Key] = true
 		return
 	}
-
+	return
 	// If the purgeinformation already exists, update the purgestamp
 	// if val, exists := kademlia.Datainfo.PurgeInfos[purgeInfo.Key]; exists {
 	// 	kademlia.SetPurgeStamp(&val)

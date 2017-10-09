@@ -6,8 +6,13 @@ import (
 
 func (kademlia *Kademlia) LookupNode(target *KademliaID, queriedNodes map[string]bool, prevBestNodes NodeCandidates, recCount int) {
 	// Should be run when looking for a node (not during bootstrap though)
+	lookUpCountMutex.Lock()
 	kademlia.LookupCount = 0
+	lookUpCountMutex.Unlock()
+
+	returnedNodesMutex.Lock()
 	kademlia.returnedNodes = prevBestNodes
+	returnedNodesMutex.Unlock()
 
 	// fmt.Println("LookupNode running")
 	closestNodes := kademlia.RoutingTable.FindClosestNodes(target, k)
@@ -27,12 +32,14 @@ func (kademlia *Kademlia) LookupNode(target *KademliaID, queriedNodes map[string
 	}
 
 	if !timeout {
+		returnedNodesMutex.Lock()
 		kademlia.returnedNodes.Sort() //what does this do
 		count := kademlia.returnedNodes.Len()
 		if count > k {
 			count = k
 		}
 		bestNodes := NodeCandidates{nodes: kademlia.returnedNodes.GetNodes(count)}
+		returnedNodesMutex.Unlock()
 		if bestNodes.nodes[0].ID.String() == target.String() {
 			//first node IS target means we DID find it this run.
 		} else if recCount == k {
@@ -53,8 +60,13 @@ func (kademlia *Kademlia) findNode(senderNode *Node, kID *KademliaID) {
 }
 
 func (kademlia *Kademlia) findNodeReturn(senderNode *Node, nodeList []Node) {
+	returnedNodesMutex.Lock()
 	kademlia.returnedNodes.Append(nodeList)
+	returnedNodesMutex.Unlock()
+
+	lookUpCountMutex.Lock()
 	kademlia.LookupCount++
+	lookUpCountMutex.Unlock()
 
 	//adds all the returned nodes to the RoutingTable
 	for i := 0; i < len(nodeList); i++ {

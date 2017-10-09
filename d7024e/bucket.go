@@ -2,11 +2,13 @@ package d7024e
 
 import (
 	"container/list"
+	"sync"
 )
 
 type bucket struct {
 	list  *list.List
 	queue *list.List
+	mutex	sync.Mutex
 }
 
 func NewBucket() *bucket {
@@ -17,6 +19,8 @@ func NewBucket() *bucket {
 }
 
 func (bucket *bucket) AddNode(node Node) bool {
+	bucket.mutex.Lock()
+	defer bucket.mutex.Unlock()
 	var element *list.Element
 	for e := bucket.list.Front(); e != nil; e = e.Next() {
 		nodeID := e.Value.(Node).ID
@@ -40,6 +44,8 @@ func (bucket *bucket) AddNode(node Node) bool {
 }
 
 func (bucket *bucket) RemoveNode(node *Node) {
+	bucket.mutex.Lock()
+	defer bucket.mutex.Unlock()
 	for e := bucket.list.Front(); e != nil; e = e.Next() {
 		nodeID := e.Value.(Node).ID
 
@@ -51,10 +57,14 @@ func (bucket *bucket) RemoveNode(node *Node) {
 
 //adds a node to the queue (the list of nodes to be added when k-list isn't full anymore)
 func (bucket *bucket) AddToQueue(node *Node) {
+	bucket.mutex.Lock()
+	defer bucket.mutex.Unlock()
 	bucket.queue.PushBack(*node)
 }
 
 func (bucket *bucket) PopQueue() Node {
+	bucket.mutex.Lock()
+	defer bucket.mutex.Unlock()
 	var node Node
 	node = bucket.queue.Front().Value.(Node)
 	bucket.queue.Remove(bucket.queue.Front())
@@ -63,6 +73,8 @@ func (bucket *bucket) PopQueue() Node {
 
 func (bucket *bucket) GetNodelist() []Node {
 	var nodes []Node
+	bucket.mutex.Lock()
+	defer bucket.mutex.Unlock()
 
 	for e := bucket.list.Front(); e != nil; e = e.Next() {
 		node := e.Value.(Node)
@@ -73,6 +85,8 @@ func (bucket *bucket) GetNodelist() []Node {
 
 func (bucket *bucket) GetNodeAndCalcDistance(target *KademliaID) []Node {
 	var nodes []Node
+	bucket.mutex.Lock()
+	defer bucket.mutex.Unlock()
 
 	for elt := bucket.list.Front(); elt != nil; elt = elt.Next() {
 		node := elt.Value.(Node)

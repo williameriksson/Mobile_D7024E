@@ -67,7 +67,7 @@ func Cat(w http.ResponseWriter, r *http.Request) {
 		// Writer the body to file
 		_, err = io.Copy(w, out)
 		if err != nil  {
-			log.Fatal(err)
+			log.Println(err)
 		}
 	}
 
@@ -142,14 +142,14 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	// Writer the body to file
 	_, err = io.Copy(w, out)
 	if err != nil  {
-		log.Fatal(err)
+		log.Println(err)
 	}
 }
 
 func isLocalHost(r *http.Request) bool{
 	u, err := url.Parse("http://"+r.RemoteAddr)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 	switch u.Hostname(){
 	case "127.0.0.1":
