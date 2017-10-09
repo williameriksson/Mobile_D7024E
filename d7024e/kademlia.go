@@ -10,7 +10,7 @@ import (
 
 const alpha int = 3
 const k int = 20
-const timeOutTime time.Duration = time.Duration(1000) * time.Millisecond
+const timeOutTime time.Duration = time.Duration(40) * time.Millisecond
 
 type Kademlia struct {
 	Network            Network
@@ -133,7 +133,7 @@ func (kademlia *Kademlia) channelReader() {
 		kademlia.RoutingTable.AddNode(msg.SenderNode)
 		switch msg.Command {
 		case cmd_ping_ack:
-			kademlia.RoutingTable.pingedNodes[msg.SenderNode.ID] = true //node has returned ping request.
+			kademlia.RoutingTable.pingedNodes[msg.SenderNode.ID] = false //node has returned ping request.
 
 		case cmd_ping:
 			kademlia.Network.SendPingAck(&kademlia.RoutingTable.me, &msg.SenderNode)
@@ -219,7 +219,7 @@ func (kademlia *Kademlia) PublishData(purgeInfo PurgeInformation, path string, m
 		fmt.Println("In PublishData: Tried to publish empty hash")
 		return
 	}
-
+	go kademlia.LookupNode(NewKademliaID(purgeInfo.Key), make(map[string]bool), NodeCandidates{}, 0)
 	closestNodes := kademlia.RoutingTable.FindClosestNodes(NewKademliaID(purgeInfo.Key), k)
 	for i := 0; i < len(closestNodes); i++ {
 		marshPurgeInfo, _ := json.Marshal(purgeInfo)
@@ -259,11 +259,13 @@ func (kademlia *Kademlia) Store(purgeInfo PurgeInformation, path string, me bool
 		fmt.Println("\n YES IT DOES ALREADY EXIST, TIME TO LIVE: ", purgeInfo.TimeToLive, "Pinned: ", purgeInfo.Pinned, "\n")
 		existingPI.TimeToLive = purgeInfo.TimeToLive
 		existingPI.Pinned = purgeInfo.Pinned
+		existingPI.LastPublished = time.Now()
 		kademlia.SetPurgeStamp(&existingPI)
 		kademlia.Datainfo.PurgeInfos[purgeInfo.Key] = existingPI
 	} else {
 		fmt.Println("\n NO IT DOES NOT EXIST, TIME TO LIVE: ", purgeInfo.TimeToLive, "\n")
 		kademlia.files[purgeInfo.Key] = path
+		purgeInfo.LastPublished = time.Now()
 		kademlia.SetPurgeStamp(&purgeInfo)
 		kademlia.Datainfo.PurgeInfos[purgeInfo.Key] = purgeInfo
 	}

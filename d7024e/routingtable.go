@@ -52,7 +52,7 @@ func (routingTable *RoutingTable) addNodeFullBucket(node Node) {
 	leastNode := []Node{bucket.list.Back().Value.(Node)} //the least recently seen node.
 	routingTable.CheckAlive(leastNode)
 
-	bucket.PopQueue()
+	// bucket.PopQueue()
 	newNode := bucket.PopQueue()
 	if bucket.Len() < k {
 		bucket.AddNode(newNode)
@@ -131,15 +131,16 @@ func (routingTable *RoutingTable) PingNodes(nodeList []Node) {
 // if not (within timeout limit) then they are removed from RoutingTable
 func (routingTable *RoutingTable) CheckAlive(nodesToCheck []Node) {
 	for i := 0; i < len(nodesToCheck); i++ {
-		routingTable.pingedNodes[nodesToCheck[i].ID] = false //set the node as not returned ping yet
+		routingTable.pingedNodes[nodesToCheck[i].ID] = true //set the node as not returned ping yet
 	}
 	routingTable.PingNodes(nodesToCheck)
 	// time.After(timeOutTime)
 	time.Sleep(timeOutTime) //wait for returns
 	// fmt.Println("nodes to check " + strconv.Itoa(len(nodesToCheck)))
 	for i := 0; i < len(nodesToCheck); i++ {
-		if routingTable.pingedNodes[nodesToCheck[i].ID] == false {
+		if routingTable.pingedNodes[nodesToCheck[i].ID] == true {
 			routingTable.RemoveNode(&nodesToCheck[i])
+			delete(routingTable.pingedNodes, nodesToCheck[i].ID)
 		}
 	}
 }

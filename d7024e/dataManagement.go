@@ -17,6 +17,7 @@ type PurgeInformation struct {
   Pinned          bool
   PurgeTimeStamp  time.Time
   TimeToLive      time.Duration
+  LastPublished   time.Time
 }
 
 type DataInformation struct {
@@ -55,7 +56,12 @@ func (kademlia *Kademlia) RepublishData() {
     if _, exists := kademlia.files[purgeInfo.Key]; exists {
       fmt.Println("\n IN REPUBLISH DATA: exists in kademlia.files, the key is: ", purgeInfo.Key, "\n")
       if !kademlia.Datainfo.MyKeys[purgeInfo.Key] {
-        kademlia.PublishData(purgeInfo, kademlia.files[purgeInfo.Key], false)
+        if (time.Now().Sub(purgeInfo.LastPublished) > REPUBLISH_INTERVAL ) {
+          purgeInfo.LastPublished = time.Now()
+          kademlia.PublishData(purgeInfo, kademlia.files[purgeInfo.Key], false)
+        } else {
+          fmt.Println("NOPE HAS ALDREADY BEEN REPUBLISHED, the diff is:", time.Now().Sub(purgeInfo.LastPublished)  )
+        }
       }
   	} else {
       fmt.Println("Wanted to Republish this key: ", purgeInfo.Key, " but the key was not found in kademlia.files.")
