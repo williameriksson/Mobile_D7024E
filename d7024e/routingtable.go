@@ -2,11 +2,13 @@ package d7024e
 
 import (
 	"time"
+	"sync"
 )
 
 //import "fmt"
-
+var pingedNodesMutex sync.Mutex
 const bucketSize = 20
+
 
 type RoutingTable struct {
 	me          Node
@@ -130,6 +132,8 @@ func (routingTable *RoutingTable) PingNodes(nodeList []Node) {
 // Checks the provided nodelist if they are still reachable,
 // if not (within timeout limit) then they are removed from RoutingTable
 func (routingTable *RoutingTable) CheckAlive(nodesToCheck []Node) {
+	pingedNodesMutex.Lock()
+	defer pingedNodesMutex.Unlock()
 	for i := 0; i < len(nodesToCheck); i++ {
 		routingTable.pingedNodes[nodesToCheck[i].ID] = true //set the node as not returned ping yet
 	}

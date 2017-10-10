@@ -98,9 +98,13 @@ func (bucket *bucket) GetNodeAndCalcDistance(target *KademliaID) []Node {
 }
 
 func (bucket *bucket) Len() int {
+	bucket.mutex.Lock()
+	defer bucket.mutex.Unlock()
 	return bucket.list.Len()
 }
 
 func (bucket *bucket) QueueLen() int {
+	bucket.mutex.Lock()
+	defer bucket.mutex.Unlock()
 	return bucket.queue.Len()
 }

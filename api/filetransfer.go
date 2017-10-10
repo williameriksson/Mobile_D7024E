@@ -22,6 +22,7 @@ func GetFile(purgeInfo d7024e.PurgeInformation, ip string){
 	if err != nil {
 		log.Println("http.Get error: ", err)
 	}
+	
 
 	content := resp.Header.Get("Content-Disposition")
 	_, params, err := mime.ParseMediaType(content)

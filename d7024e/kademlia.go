@@ -11,7 +11,7 @@ import (
 
 const alpha int = 3
 const k int = 20
-const timeOutTime time.Duration = time.Duration(40) * time.Millisecond
+const timeOutTime time.Duration = time.Duration(300) * time.Millisecond
 var returnedNodesMutex sync.Mutex
 var lookUpCountMutex sync.Mutex
 var filesMutex sync.Mutex
@@ -109,6 +109,7 @@ func (kademlia *Kademlia) JoinNetwork(bootStrapIP string, myIP string) {
 
 			} else {
 				fmt.Println("Expected PING_ACK, instead got: ", confirmation.Command, "will keep waiting for PING_ACK")
+				kademlia.Network.SendPingMessage(&kademlia.RoutingTable.me, &bootStrapNode)
 			}
 
 		}

@@ -61,6 +61,7 @@ func Cat(w http.ResponseWriter, r *http.Request) {
 			log.Print(err)
 		}
 
+
 		io.Copy(w, resp.Body)
 		defer resp.Body.Close()
 	} else {
@@ -113,7 +114,7 @@ func AddNode(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		addr := vars["addr"]
 		bootstrap := r.FormValue("bootstrap")
-
+		
 		kademlia := d7024e.NewKademlia()
 		go kademlia.Run(bootstrap, addr)
 	} else{

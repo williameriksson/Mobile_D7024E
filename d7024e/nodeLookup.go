@@ -40,11 +40,13 @@ func (kademlia *Kademlia) LookupNode(target *KademliaID, queriedNodes map[string
 		}
 		bestNodes := NodeCandidates{nodes: kademlia.returnedNodes.GetNodes(count)}
 		returnedNodesMutex.Unlock()
-		if bestNodes.nodes[0].ID.String() == target.String() {
+
+		if count == 0 {
+			kademlia.LookupNode(target, queriedNodes, prevBestNodes, (recCount + 1))
+		} else if bestNodes.nodes[0].ID.String() == target.String() {
 			//first node IS target means we DID find it this run.
 		} else if recCount == k {
 			//did NOT find node after k attempts
-
 		} else {
 			//did NOT find node, continue search
 			kademlia.LookupNode(target, queriedNodes, bestNodes, (recCount + 1))
