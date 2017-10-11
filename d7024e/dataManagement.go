@@ -37,9 +37,9 @@ func (kademlia *Kademlia) RepublishMyDataOnce() {
     tmp := kademlia.Datainfo.PurgeInfos[myKey]
     tmp.TimeToLive = TTL
     kademlia.Datainfo.PurgeInfos[myKey] = tmp
-    fmt.Println("")
-    fmt.Println("IN REPUBLISHMYDATA, The purgeInfo: ", kademlia.Datainfo.PurgeInfos[myKey], "The filepath: ", kademlia.files[myKey])
-    fmt.Println("")
+    // fmt.Println("")
+    // fmt.Println("IN REPUBLISHMYDATA, The purgeInfo: ", kademlia.Datainfo.PurgeInfos[myKey], "The filepath: ", kademlia.files[myKey])
+    // fmt.Println("")
     dataInfoMutex.Unlock()
     kademlia.PublishData(tmp, kademlia.files[myKey], true)
     dataInfoMutex.Lock()
@@ -63,7 +63,7 @@ func (kademlia *Kademlia) RepublishData() {
 
     filesMutex.Lock()
     if _, exists := kademlia.files[purgeInfo.Key]; exists {
-      fmt.Println("\n IN REPUBLISH DATA: exists in kademlia.files, the key is: ", purgeInfo.Key, "\n")
+      //fmt.Println("\n IN REPUBLISH DATA: exists in kademlia.files, the key is: ", purgeInfo.Key, "\n")
       if !kademlia.Datainfo.MyKeys[purgeInfo.Key] {
         if (time.Now().Sub(purgeInfo.LastPublished) > REPUBLISH_INTERVAL ) {
           purgeInfo.LastPublished = time.Now()
@@ -71,7 +71,7 @@ func (kademlia *Kademlia) RepublishData() {
           kademlia.PublishData(purgeInfo, kademlia.files[purgeInfo.Key], false)
           dataInfoMutex.Lock()
         } else {
-          fmt.Println("NOPE HAS ALDREADY BEEN REPUBLISHED, the diff is:", time.Now().Sub(purgeInfo.LastPublished)  )
+          fmt.Println("FILE HAS ALDREADY BEEN REPUBLISHED, the diff is:", time.Now().Sub(purgeInfo.LastPublished)  )
         }
       }
   	} else {

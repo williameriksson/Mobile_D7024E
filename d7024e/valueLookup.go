@@ -37,7 +37,7 @@ func (kademlia *Kademlia) FindValue(senderNode *Node, hash *KademliaID) {
     fmt.Printf("Yes, the value is %v \n", val)
   } else {
     nodeList := kademlia.RoutingTable.FindClosestNodes(hash, k)
-    fmt.Println("DID NOT FIND VALUE, THE NODELIST IS: ", nodeList)
+    // fmt.Println("DID NOT FIND VALUE, THE NODELIST IS: ", nodeList)
     kademlia.Network.SendReturnFindDataMessage(&kademlia.RoutingTable.me, senderNode, nodeList)
   }
 }

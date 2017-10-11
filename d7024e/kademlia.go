@@ -145,7 +145,7 @@ func (kademlia *Kademlia) channelReader() {
 			kademlia.Network.SendPingAck(&kademlia.RoutingTable.me, &msg.SenderNode)
 
 		case cmd_store:
-			fmt.Println("GOT " + cmd_store)
+			// fmt.Println("GOT " + cmd_store)
 			var purgeInfo PurgeInformation
 			err := json.Unmarshal(msg.Data, &purgeInfo)
 			checkError(err)
@@ -155,7 +155,7 @@ func (kademlia *Kademlia) channelReader() {
 			case kademlia.ServerChannel <- NewHandle(CMD_RETRIEVE_FILE, purgeInfo, msg.SenderNode.Address):
 				fmt.Println("Sent message to server to get a file")
 			case <-time.After(time.Second * 1):
-				fmt.Println("Could not deliver retrieve message to server, not listening")
+				// fmt.Println("Could not deliver retrieve message to server, not listening")
 			}
 			//QUESTION: Should server handle the below store or kademlia?
 			//kademlia.Store(string(msg.Data), DOWNLOAD_PATH, false)
@@ -275,14 +275,14 @@ func (kademlia *Kademlia) Store(purgeInfo PurgeInformation, path string, me bool
 	dataInfoMutex.Lock()
 
 	if existingPI, exists := kademlia.Datainfo.PurgeInfos[purgeInfo.Key]; exists {
-		fmt.Println("\n YES IT DOES ALREADY EXIST, TIME TO LIVE: ", purgeInfo.TimeToLive, "Pinned: ", purgeInfo.Pinned, "\n")
+		fmt.Println("\n THE FILE DOES ALREADY EXIST, TIME TO LIVE: ", purgeInfo.TimeToLive, "Pinned: ", purgeInfo.Pinned, "\n")
 		existingPI.TimeToLive = purgeInfo.TimeToLive
 		existingPI.Pinned = purgeInfo.Pinned
 		existingPI.LastPublished = time.Now()
 		kademlia.SetPurgeStamp(&existingPI)
 		kademlia.Datainfo.PurgeInfos[purgeInfo.Key] = existingPI
 	} else {
-		fmt.Println("\n NO IT DOES NOT EXIST, TIME TO LIVE: ", purgeInfo.TimeToLive, "\n")
+		fmt.Println("\n THE FILE DOES NOT EXIST, ADDING IT, TIME TO LIVE: ", purgeInfo.TimeToLive, "\n")
 		filesMutex.Lock()
 		kademlia.files[purgeInfo.Key] = path
 		filesMutex.Unlock()
