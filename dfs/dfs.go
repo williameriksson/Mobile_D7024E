@@ -16,7 +16,8 @@ import (
 
 // Compile command: go build -o dfs.exe dfs.go
 
-const addr string = "http://127.0.0.1:9100"
+const ip string = "http://127.0.0.1"
+var port string = ":9100"
 
 func main() {
 	cmds := os.Args
@@ -28,6 +29,12 @@ func main() {
 	if dir_err != nil {
 		log.Fatal(dir_err)
 	}
+
+	if (cmds[len(cmds)-2] == "-p"){
+		port = ":" + cmds[len(cmds)-1]
+	}
+
+	addr := ip + port
 
 	switch cmds[1] {
 	case "store":
